@@ -50,15 +50,15 @@ class EsaMission1TelemetryProvider(TelemetryProvider):
 
     @property
     def stream_status(self) -> TelemetryStreamStatus:
-        return TelemetryStreamStatus.HISTORICAL
+        return TelemetryStreamStatus.HISTORICAL_RESEARCH_DATA
 
     def get_spacecraft_metadata(self) -> Spacecraft:
         return Spacecraft(
             spacecraft_id="ESA_MISSION_1",
             norad_id=None,
-            name="ESA Mission-1 Satellite",
+            name="ESA Mission-1 Satellite (Research Validation)",
             mission_id="ESA_MISSION_1",
-            telemetry_stream_status=TelemetryStreamStatus.HISTORICAL,
+            telemetry_stream_status=TelemetryStreamStatus.HISTORICAL_RESEARCH_DATA,
             authorized_channels=["channel_41", "channel_42", "channel_43", "channel_44", "channel_45", "channel_46"],
         )
 

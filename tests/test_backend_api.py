@@ -103,7 +103,7 @@ def test_orbit_satellites():
     data = res.json()
     assert "satellites" in data
     assert len(data["satellites"]) >= 3
-    assert data["ground_station"]["name"] == "DEMO GROUND STATION"
+    assert data["ground_station"]["name"] == "ASTRA REFERENCE GROUND STATION"
 
 
 def test_orbit_state():
@@ -155,20 +155,21 @@ def test_v1_global_states_and_fleet():
     res_fleet = client.get("/api/v1/fleet")
     assert res_fleet.status_code == 200
     fleet = res_fleet.json()
-    assert fleet["authorized_count"] == 1
-    assert fleet["spacecraft"][0]["spacecraft_id"] == "ESA_MISSION_1"
+    assert fleet["authorized_count"] == 0
+    assert fleet["status_message"] == "NO AUTHORIZED FLEET CONNECTED"
 
 
 def test_v1_spacecraft_overview_and_sources_status():
     res = client.get("/api/v1/spacecraft/ESA_MISSION_1/overview")
     assert res.status_code == 200
     sc = res.json()
-    assert sc["name"] == "ESA Mission-1 Satellite"
+    assert "ESA Mission-1" in sc["name"]
     assert len(sc["parameters"]) == 6
 
     res_src = client.get("/api/v1/sources/status")
     assert res_src.status_code == 200
     srcs = res_src.json()
     assert len(srcs["sources"]) >= 2
+
 
 

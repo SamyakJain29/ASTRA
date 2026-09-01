@@ -18,10 +18,11 @@ class TelemetryStreamStatus(StrEnum):
     LIVE_TELEMETRY = "LIVE_TELEMETRY"
     CURRENT_PROPAGATED = "CURRENT_PROPAGATED"
     NEAR_REAL_TIME_SOURCE = "NEAR_REAL_TIME_SOURCE"
-    HISTORICAL = "HISTORICAL"
+    HISTORICAL_RESEARCH_DATA = "HISTORICAL_RESEARCH_DATA"
     NO_TELEMETRY_SOURCE = "NO_TELEMETRY_SOURCE"
     RESTRICTED = "RESTRICTED"
     UNAVAILABLE = "UNAVAILABLE"
+    NOT_CONFIGURED = "NOT_CONFIGURED"
 
 
 class Mission(BaseModel):
@@ -38,7 +39,7 @@ class Spacecraft(BaseModel):
     mission_id: str = Field(..., description="Associated Mission ID")
     status: SpacecraftStatus = Field(SpacecraftStatus.NOMINAL_OPERATIONS, description="Operational Status")
     telemetry_stream_status: TelemetryStreamStatus = Field(
-        TelemetryStreamStatus.HISTORICAL, description="Active Telemetry Source Mode"
+        TelemetryStreamStatus.HISTORICAL_RESEARCH_DATA, description="Active Telemetry Source Mode"
     )
     authorized_channels: list[str] = Field(default_factory=list, description="Monitored telemetry parameters")
 

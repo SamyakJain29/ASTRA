@@ -1,6 +1,8 @@
 # ASTRA Live Orbit & Ground Station Configuration
 
 cache_ttl_seconds: 7200 # 2-hour minimum CelesTrak refresh policy
+catalog_refresh_interval_seconds: 7200 # Background catalog pull interval
+propagation_cadence_seconds: 3.0 # Cadence for full-catalog background propagation snapshot
 celestrak_base_url: "https://celestrak.org/NORAD/elements/gp.php"
 satnogs_base_url: "https://db.satnogs.org/api"
 
@@ -19,7 +21,7 @@ satellites:
     description: "International Space Station"
 
 ground_station:
-  name: "DEMO GROUND STATION"
+  name: "ASTRA REFERENCE GROUND STATION"
   latitude: 17.3850 # Bengaluru/Hyderabad regional reference
   longitude: 78.4867
   altitude_km: 0.545
