@@ -60,9 +60,102 @@ async function initGlobalCatalog() {
   }
 }
 
+let recentRfOnly = false;
+
+function toggleRecentRfFilter(checked) {
+  recentRfOnly = checked;
+  refreshGlobalCatalogStates();
+}
+
+function switchInspectorTab(tabKey) {
+  const tabs = ['orbital', 'rf', 'telemetry', 'feed'];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`itab-btn-${t}`);
+    const sec = document.getElementById(`isec-${t}`);
+    if (btn) btn.classList.toggle('active', t === tabKey);
+    if (sec) sec.classList.toggle('active', t === tabKey);
+  });
+}
+
+function renderSatnogsInspectorData(satnogsData) {
+  if (!satnogsData) return;
+
+  const rfBadge = document.getElementById("satnogs-rf-status");
+  const tmBadge = document.getElementById("satnogs-tm-status");
+  const status = satnogsData.overall_status || "SOURCE UNAVAILABLE";
+
+  if (rfBadge) {
+    rfBadge.innerText = status;
+    rfBadge.className = `status-badge ${status === 'AVAILABLE' ? 'nominal' : (status === 'SOURCE UNAVAILABLE' ? 'warning' : 'known')}`;
+  }
+  if (tmBadge) {
+    const tmStatus = satnogsData.has_telemetry_frames ? "AVAILABLE" : (satnogsData.has_decoder ? "NO RECENT DATA" : "NO DECODER");
+    tmBadge.innerText = tmStatus;
+    tmBadge.className = `status-badge ${tmStatus === 'AVAILABLE' ? 'nominal' : 'warning'}`;
+  }
+
+  // RF Observations Section
+  const latestObs = satnogsData.latest_observation;
+  document.getElementById("rf-obs-time").innerText = latestObs ? (latestObs.timestamp || "--") : "NO RECENT DATA";
+  document.getElementById("rf-obs-station").innerText = latestObs ? (latestObs.ground_station_identity || "--") : "--";
+  document.getElementById("rf-obs-freq").innerText = latestObs ? `${latestObs.frequency_hz ? (latestObs.frequency_hz / 1e6).toFixed(3) + ' MHz' : '--'} | ${latestObs.mode || 'RF'}` : "--";
+  document.getElementById("rf-obs-id").innerText = latestObs ? `#${latestObs.observation_id}` : "--";
+  document.getElementById("rf-obs-count").innerText = (satnogsData.observations || []).length;
+
+  const obsContainer = document.getElementById("rf-obs-list-container");
+  if (obsContainer) {
+    const obsList = satnogsData.observations || [];
+    if (obsList.length === 0) {
+      obsContainer.innerHTML = `<div class="notice-banner">No recent RF observations recorded for NORAD ${satnogsData.norad_id} in SatNOGS DB.</div>`;
+    } else {
+      let html = `<table class="decoder-kv-table"><thead><tr><th>PASS ID</th><th>TIMESTAMP</th><th>GROUND STATION NODE</th><th>FREQ / MODE</th><th>STATUS</th></tr></thead><tbody>`;
+      obsList.slice(0, 5).forEach(o => {
+        html += `<tr>
+          <td class="mono">#${o.observation_id}</td>
+          <td>${o.timestamp || '--'}</td>
+          <td>${o.ground_station_identity || o.ground_station_id}</td>
+          <td class="mono">${o.frequency_hz ? (o.frequency_hz / 1e6).toFixed(3) + ' MHz' : '--'}</td>
+          <td><span class="status-badge nominal">${o.status}</span></td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      obsContainer.innerHTML = html;
+    }
+  }
+
+  // Decoded Telemetry Section
+  const tmContainer = document.getElementById("satnogs-telemetry-frames-container");
+  if (tmContainer) {
+    const frames = satnogsData.telemetry_frames || [];
+    if (frames.length === 0) {
+      tmContainer.innerHTML = `<div class="notice-banner">No public decoded telemetry frames available for NORAD ${satnogsData.norad_id}. Status: ${status}</div>`;
+    } else {
+      let html = "";
+      frames.forEach((frame, idx) => {
+        html += `<div class="subpanel" style="margin-top: 0.5rem;">
+          <div class="panel-header" style="margin-bottom: 0.3rem; padding-bottom: 0.2rem;">
+            <span class="panel-title">FRAME #${idx+1} — ${frame.timestamp || 'TIMESTAMP N/A'}</span>
+            <span class="mono" style="font-size: 0.65rem; color: var(--color-accent);">${frame.observer}</span>
+          </div>
+          ${frame.raw_frame_hex ? `<div class="kv-row"><span class="kv-label">RAW HEX FRAME</span><span class="kv-val mono" style="font-size: 0.65rem; word-break: break-all;">${frame.raw_frame_hex}</span></div>` : ''}
+          <div class="section-title" style="margin-top: 0.4rem;">DYNAMIC DECODER FIELDS</div>
+          <table class="decoder-kv-table"><thead><tr><th>FIELD NAME</th><th>DECODER VALUE</th></tr></thead><tbody>`;
+
+        const fields = frame.decoded_fields || {};
+        Object.entries(fields).forEach(([k, v]) => {
+          html += `<tr><td class="field-name mono">${k}</td><td class="field-val mono">${v}</td></tr>`;
+        });
+        html += `</tbody></table></div>`;
+      });
+      tmContainer.innerHTML = html;
+    }
+  }
+}
+
 async function refreshGlobalCatalogStates() {
   try {
-    const res = await fetch("/api/v1/global/states");
+    const url = recentRfOnly ? "/api/v1/global/states?recent_rf_only=true" : "/api/v1/global/states";
+    const res = await fetch(url);
     if (!res.ok) return;
     const data = await res.json();
     catalogObjects = data.states || [];
@@ -155,6 +248,10 @@ async function fetchObjectDetail(noradId) {
           badge.className = "status-badge";
         }
       }
+    }
+
+    if (detail.satnogs_data) {
+      renderSatnogsInspectorData(detail.satnogs_data);
     }
 
     renderGlobalOrbitMap();

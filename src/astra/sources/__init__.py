@@ -4,7 +4,7 @@ from astra.sources.catalog import OrbitCatalogProvider, OrbitPropagationEngine, 
 from astra.sources.celestrak import CelesTrakProvider
 from astra.sources.pass_calculator import PassCalculator
 from astra.sources.propagator import SGP4Propagator, teme_to_latlonalt
-from astra.sources.satnogs import SatNOGSProvider
+from astra.sources.satnogs import SatNOGSProvider, SatnogsObservationProvider
 
 __all__ = [
     "OrbitCatalogProvider",
@@ -15,4 +15,5 @@ __all__ = [
     "teme_to_latlonalt",
     "PassCalculator",
     "SatNOGSProvider",
+    "SatnogsObservationProvider",
 ]

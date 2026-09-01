@@ -70,6 +70,9 @@
                   <input type="text" id="global-search-input" placeholder="Search NORAD ID / COSPAR / Object Name..." oninput="onGlobalSearch(this.value)">
                   <div class="search-results" id="search-results-dropdown" style="display: none;"></div>
                 </div>
+                <label style="display: flex; align-items: center; gap: 0.35rem; font-family: var(--font-mono); font-size: 0.68rem; color: var(--color-accent); cursor: pointer; user-select: none;">
+                  <input type="checkbox" id="filter-rf-checkbox" onchange="toggleRecentRfFilter(this.checked)"> RECENT RF DATA
+                </label>
               </div>
               <span class="status-badge live-dot" id="live-stream-badge">REALTIME SGP4 STREAM</span>
             </div>
@@ -85,10 +88,10 @@
                 <span class="status-badge" id="pass-visibility-badge">BELOW HORIZON</span>
               </div>
               <div class="grid-4-dense">
-                <div class="gc-metric"><span class="gc-lbl">AZIMUTH</span><span class="gc-val" id="gc-az">184.2°</span></div>
-                <div class="gc-metric"><span class="gc-lbl">ELEVATION</span><span class="gc-val" id="gc-el">-24.5°</span></div>
-                <div class="gc-metric"><span class="gc-lbl">RANGE</span><span class="gc-val" id="gc-range">4120.4 km</span></div>
-                <div class="gc-metric"><span class="gc-lbl">MAX ELEVATION</span><span class="gc-val" id="gc-max-el">64.2°</span></div>
+                <div class="gc-metric"><span class="gc-lbl">AZIMUTH</span><span class="gc-val" id="gc-az">--°</span></div>
+                <div class="gc-metric"><span class="gc-lbl">ELEVATION</span><span class="gc-val" id="gc-el">--°</span></div>
+                <div class="gc-metric"><span class="gc-lbl">RANGE</span><span class="gc-val" id="gc-range">-- km</span></div>
+                <div class="gc-metric"><span class="gc-lbl">MAX ELEVATION</span><span class="gc-val" id="gc-max-el">--°</span></div>
                 <div class="gc-metric"><span class="gc-lbl">NEXT AOS (UTC)</span><span class="gc-val" id="gc-aos">--:--:--</span></div>
                 <div class="gc-metric"><span class="gc-lbl">NEXT LOS (UTC)</span><span class="gc-val" id="gc-los">--:--:--</span></div>
                 <div class="gc-metric"><span class="gc-lbl">PASS DURATION</span><span class="gc-val" id="gc-dur">-- min</span></div>
@@ -103,62 +106,111 @@
           <div class="panel inspector-panel">
             <div class="panel-header">
               <span class="panel-title">SELECTED SPACE OBJECT INSPECTOR</span>
-              <span class="obj-header-name" id="sel-obj-name">ISS (ZARYA)</span>
+              <span class="obj-header-name" id="sel-obj-name">--</span>
             </div>
 
             <!-- Identifiers Grid -->
             <div class="section-title">OBJECT IDENTIFIERS</div>
             <div class="kv-grid">
-              <div class="kv-row"><span class="kv-label">NORAD ID</span><span class="kv-val" id="sel-norad-id">25544</span></div>
-              <div class="kv-row"><span class="kv-label">COSPAR ID</span><span class="kv-val" id="sel-cospar-id">1998-067A</span></div>
-              <div class="kv-row"><span class="kv-label">OBJECT TYPE</span><span class="kv-val" id="sel-obj-type">ACTIVE_SPACECRAFT</span></div>
-              <div class="kv-row"><span class="kv-label">ORBIT REGIME</span><span class="kv-val" id="sel-orbit-regime">LEO</span></div>
+              <div class="kv-row"><span class="kv-label">NORAD ID</span><span class="kv-val" id="sel-norad-id">--</span></div>
+              <div class="kv-row"><span class="kv-label">COSPAR ID</span><span class="kv-val" id="sel-cospar-id">--</span></div>
+              <div class="kv-row"><span class="kv-label">OBJECT TYPE</span><span class="kv-val" id="sel-obj-type">--</span></div>
+              <div class="kv-row"><span class="kv-label">ORBIT REGIME</span><span class="kv-val" id="sel-orbit-regime">--</span></div>
             </div>
 
-            <!-- Realtime Propagated State -->
-            <div class="section-title" style="margin-top: 0.75rem;">CURRENT REALTIME PROPAGATED STATE (1 Hz SGP4)</div>
-            <div class="telemetry-block">
-              <div class="tel-grid">
-                <div class="tel-box">
-                  <div class="tel-lbl">LATITUDE</div>
-                  <div class="tel-val" id="sel-lat">0.0000° N</div>
+            <!-- Inspector Sub-Tabs -->
+            <div class="inspector-tabs" style="margin-top: 0.75rem;">
+              <button class="inspector-tab-btn active" id="itab-btn-orbital" onclick="switchInspectorTab('orbital')">ORBITAL STATE</button>
+              <button class="inspector-tab-btn" id="itab-btn-rf" onclick="switchInspectorTab('rf')">RF OBSERVATIONS</button>
+              <button class="inspector-tab-btn" id="itab-btn-telemetry" onclick="switchInspectorTab('telemetry')">DECODED TELEMETRY</button>
+              <button class="inspector-tab-btn" id="itab-btn-feed" onclick="switchInspectorTab('feed')">AUTHORIZED MISSION FEED</button>
+            </div>
+
+            <!-- SECTION 1: ORBITAL STATE -->
+            <div class="inspector-section active" id="isec-orbital">
+              <div class="section-title">CURRENT REALTIME PROPAGATED STATE (1 Hz SGP4)</div>
+              <div class="telemetry-block">
+                <div class="tel-grid">
+                  <div class="tel-box">
+                    <div class="tel-lbl">LATITUDE</div>
+                    <div class="tel-val" id="sel-lat">--°</div>
+                  </div>
+                  <div class="tel-box">
+                    <div class="tel-lbl">LONGITUDE</div>
+                    <div class="tel-val" id="sel-lon">--°</div>
+                  </div>
+                  <div class="tel-box">
+                    <div class="tel-lbl">ALTITUDE</div>
+                    <div class="tel-val" id="sel-alt">-- km</div>
+                  </div>
+                  <div class="tel-box">
+                    <div class="tel-lbl">VELOCITY</div>
+                    <div class="tel-val" id="sel-vel">-- km/s</div>
+                  </div>
                 </div>
-                <div class="tel-box">
-                  <div class="tel-lbl">LONGITUDE</div>
-                  <div class="tel-val" id="sel-lon">0.0000° E</div>
-                </div>
-                <div class="tel-box">
-                  <div class="tel-lbl">ALTITUDE</div>
-                  <div class="tel-val" id="sel-alt">409.50 km</div>
-                </div>
-                <div class="tel-box">
-                  <div class="tel-lbl">VELOCITY</div>
-                  <div class="tel-val" id="sel-vel">7.666 km/s</div>
+                <div class="kv-row" style="margin-top: 0.5rem;"><span class="kv-label">STATE TIMESTAMP (UTC)</span><span class="kv-val" id="sel-state-time">--</span></div>
+              </div>
+
+              <div class="section-title" style="margin-top: 0.75rem;">SOURCE ORBITAL ELEMENTS (CelesTrak GP/OMM)</div>
+              <div class="kv-grid">
+                <div class="kv-row"><span class="kv-label">INCLINATION</span><span class="kv-val" id="sel-inc">--°</span></div>
+                <div class="kv-row"><span class="kv-label">ECCENTRICITY</span><span class="kv-val" id="sel-ecc">--</span></div>
+                <div class="kv-row"><span class="kv-label">MEAN MOTION</span><span class="kv-val" id="sel-mm">-- rev/day</span></div>
+                <div class="kv-row"><span class="kv-label">SEMI-MAJOR AXIS</span><span class="kv-val" id="sel-sma">-- km</span></div>
+                <div class="kv-row"><span class="kv-label">APOGEE / PERIGEE</span><span class="kv-val" id="sel-ap-per">-- / -- km</span></div>
+                <div class="kv-row"><span class="kv-label">ORBIT PERIOD</span><span class="kv-val" id="sel-period">-- min</span></div>
+                <div class="kv-row"><span class="kv-label">ELEMENT EPOCH</span><span class="kv-val" id="sel-epoch">--</span></div>
+                <div class="kv-row"><span class="kv-label">ELEMENT AGE</span><span class="kv-val" id="sel-age">-- hrs</span></div>
+              </div>
+
+              <div class="section-title" style="margin-top: 0.75rem;">SOURCE PROVENANCE & AUTHENTICATION</div>
+              <div class="kv-grid">
+                <div class="kv-row"><span class="kv-label">SOURCE PROVIDER</span><span class="kv-val" id="sel-prov">CelesTrak GP/OMM Catalog Ingestion Engine</span></div>
+                <div class="kv-row"><span class="kv-label">CACHE DISK STATE</span><span class="kv-val" id="sel-cache-state">--</span></div>
+                <div class="kv-row"><span class="kv-label">TELEMETRY ACCESS</span><span class="kv-val" id="sel-tm-auth">--</span></div>
+              </div>
+            </div>
+
+            <!-- SECTION 2: RF OBSERVATIONS -->
+            <div class="inspector-section" id="isec-rf">
+              <div class="satnogs-citation-banner">
+                <span>SOURCE: SATNOGS COMMUNITY GROUND NETWORK</span>
+                <span class="status-badge" id="satnogs-rf-status">AVAILABLE</span>
+              </div>
+              <div class="kv-grid">
+                <div class="kv-row"><span class="kv-label">LATEST OBSERVATION TIMESTAMP</span><span class="kv-val" id="rf-obs-time">--</span></div>
+                <div class="kv-row"><span class="kv-label">GROUND STATION IDENTITY</span><span class="kv-val" id="rf-obs-station">--</span></div>
+                <div class="kv-row"><span class="kv-label">FREQUENCY / MODE</span><span class="kv-val" id="rf-obs-freq">--</span></div>
+                <div class="kv-row"><span class="kv-label">OBSERVATION ID</span><span class="kv-val" id="rf-obs-id">--</span></div>
+                <div class="kv-row"><span class="kv-label">TOTAL RECENT PASSES</span><span class="kv-val" id="rf-obs-count">0</span></div>
+              </div>
+              <div id="rf-obs-list-container" style="margin-top: 0.6rem;"></div>
+            </div>
+
+            <!-- SECTION 3: DECODED TELEMETRY -->
+            <div class="inspector-section" id="isec-telemetry">
+              <div class="satnogs-citation-banner">
+                <span>SOURCE: SATNOGS COMMUNITY GROUND NETWORK</span>
+                <span class="status-badge" id="satnogs-tm-status">AVAILABLE</span>
+              </div>
+              <div class="notice-banner" style="margin-bottom: 0.5rem; font-size: 0.68rem;">
+                SatNOGS public telemetry frames preserve raw field names and units. Data is NOT routed into the private ESA anomaly detector.
+              </div>
+              <div id="satnogs-telemetry-frames-container"></div>
+            </div>
+
+            <!-- SECTION 4: AUTHORIZED MISSION FEED -->
+            <div class="inspector-section" id="isec-feed">
+              <div class="panel empty-state-panel" style="padding: 1rem 0.5rem;">
+                <div class="empty-icon">🔒</div>
+                <div class="empty-title" style="font-size: 0.8rem; color: var(--color-warning);">NO AUTHORIZED MISSION TELEMETRY SOURCE CONNECTED</div>
+                <div class="empty-desc" style="font-size: 0.72rem;">This satellite is tracked via public orbital propagation and SatNOGS RF observations.</div>
+                <div class="empty-subtext" style="font-size: 0.68rem; margin-top: 0.5rem;">
+                  Operational health intelligence and real-time telemetry anomaly detection require connecting an authorized mission TelemetryProvider API endpoint.
                 </div>
               </div>
-              <div class="kv-row" style="margin-top: 0.5rem;"><span class="kv-label">STATE TIMESTAMP (UTC)</span><span class="kv-val" id="sel-state-time">2026-09-02T00:00:00Z</span></div>
             </div>
 
-            <!-- Source Orbital Elements -->
-            <div class="section-title" style="margin-top: 0.75rem;">SOURCE ORBITAL ELEMENTS (CelesTrak GP/OMM)</div>
-            <div class="kv-grid">
-              <div class="kv-row"><span class="kv-label">INCLINATION</span><span class="kv-val" id="sel-inc">51.6415°</span></div>
-              <div class="kv-row"><span class="kv-label">ECCENTRICITY</span><span class="kv-val" id="sel-ecc">0.000512</span></div>
-              <div class="kv-row"><span class="kv-label">MEAN MOTION</span><span class="kv-val" id="sel-mm">15.4891 rev/day</span></div>
-              <div class="kv-row"><span class="kv-label">SEMI-MAJOR AXIS</span><span class="kv-val" id="sel-sma">6798.2 km</span></div>
-              <div class="kv-row"><span class="kv-label">APOGEE / PERIGEE</span><span class="kv-val" id="sel-ap-per">422.4 / 418.0 km</span></div>
-              <div class="kv-row"><span class="kv-label">ORBIT PERIOD</span><span class="kv-val" id="sel-period">92.97 min</span></div>
-              <div class="kv-row"><span class="kv-label">ELEMENT EPOCH</span><span class="kv-val" id="sel-epoch">2026-09-01T12:00:00Z</span></div>
-              <div class="kv-row"><span class="kv-label">ELEMENT AGE</span><span class="kv-val" id="sel-age">1.2 hrs</span></div>
-            </div>
-
-            <!-- Provenance -->
-            <div class="section-title" style="margin-top: 0.75rem;">SOURCE PROVENANCE & AUTHENTICATION</div>
-            <div class="kv-grid">
-              <div class="kv-row"><span class="kv-label">SOURCE PROVIDER</span><span class="kv-val" id="sel-prov">CelesTrak OMM/GP Ingestion Engine</span></div>
-              <div class="kv-row"><span class="kv-label">CACHE DISK STATE</span><span class="kv-val" id="sel-cache-state" style="color: var(--color-nominal);">USING CACHED ORBITAL ELEMENTS</span></div>
-              <div class="kv-row"><span class="kv-label">TELEMETRY ACCESS</span><span class="kv-val" id="sel-tm-auth" style="color: var(--text-muted);">NO TELEMETRY SOURCE</span></div>
-            </div>
           </div>
         </div>
       </div>

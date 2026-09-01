@@ -23,6 +23,7 @@ from astra.sources import (
     OrbitStateStore,
     PassCalculator,
     SatNOGSProvider,
+    SatnogsObservationProvider,
     SGP4Propagator,
 )
 
@@ -33,6 +34,7 @@ ABLATION_REPORT_PATH = Path("reports/astra_context_ablation.md")
 
 # Global Catalog Provider & State Store Instances
 catalog_provider = OrbitCatalogProvider()
+satnogs_provider = SatnogsObservationProvider()
 orbit_store = OrbitStateStore(catalog_provider, cache_cadence_seconds=3.0)
 
 
@@ -469,9 +471,18 @@ def get_global_catalog(
     regime: OrbitRegime | None = None,
     object_type: ObjectType | None = None,
     authorized_only: bool = False,
+    recent_rf_only: bool = False,
 ):
     """Global Orbital Catalog query endpoint supporting exact-ranked search and verified filters."""
     objects = catalog_provider.list_objects(query=q, regime=regime, obj_type=object_type, authorized_only=authorized_only)
+    if recent_rf_only:
+        filtered = []
+        for obj in objects:
+            avail = satnogs_provider.get_data_availability(obj.norad_id)
+            if avail["has_observations"] or avail["overall_status"] in ["AVAILABLE", "NO DECODER"]:
+                filtered.append(obj)
+        objects = filtered
+
     summary = catalog_provider.status_summary
     return {
         "count": len(objects),
@@ -515,11 +526,15 @@ def get_global_summary():
 
 
 @app.get("/api/v1/global/states")
-def get_global_states():
+def get_global_states(recent_rf_only: bool = False):
     """Compact vectorized propagated state vectors for scalable 2D/3D visualizers."""
     states = orbit_store.get_all_propagated_states()
     compact = []
     for st in states:
+        if recent_rf_only:
+            avail = satnogs_provider.get_data_availability(st.norad_id)
+            if not (avail["has_observations"] or avail["overall_status"] in ["AVAILABLE", "NO DECODER"]):
+                continue
         compact.append({
             "norad_id": st.norad_id,
             "name": st.name,
@@ -574,6 +589,8 @@ def get_global_object_detail(norad_id: int):
         })
         ground_contact = pass_calc.get_instantaneous_pass(propagator, datetime.now(UTC))
 
+    satnogs_data = satnogs_provider.fetch_all(norad_id)
+
     return {
         "norad_id": obj.norad_id,
         "name": obj.name,
@@ -606,7 +623,26 @@ def get_global_object_detail(norad_id: int):
         "orbit_path": orbit_path,
         "ground_contact": ground_contact,
         "network_and_cache_state": catalog_provider.status_summary,
+        "satnogs_data": satnogs_data,
     }
+
+
+@app.get("/api/v1/global/object/{norad_id}/observations")
+def get_object_observations(norad_id: int):
+    """SatNOGS live RF observation data endpoint for a given NORAD ID."""
+    return satnogs_provider.get_observations(norad_id)
+
+
+@app.get("/api/v1/global/object/{norad_id}/telemetry")
+def get_object_telemetry(norad_id: int):
+    """SatNOGS public telemetry frame endpoint with dynamic decoder key-values."""
+    return satnogs_provider.get_telemetry(norad_id)
+
+
+@app.get("/api/v1/global/object/{norad_id}/data-availability")
+def get_object_data_availability(norad_id: int):
+    """Explicit SatNOGS RF observation and telemetry availability status."""
+    return satnogs_provider.get_data_availability(norad_id)
 
 
 @app.get("/api/v1/fleet")

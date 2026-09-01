@@ -203,6 +203,94 @@ body {
   letter-spacing: 0.08em;
 }
 
+/* Sub-tab Navigation for Inspector Panels */
+.inspector-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 0.35rem;
+  overflow-x: auto;
+}
+
+.inspector-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  border-radius: var(--radius);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.inspector-tab-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.inspector-tab-btn.active {
+  background: var(--bg-raised);
+  color: var(--color-accent);
+  border-color: var(--border-subtle);
+}
+
+.inspector-section {
+  display: none;
+}
+
+.inspector-section.active {
+  display: block;
+}
+
+/* SatNOGS Live Data Banner */
+.satnogs-citation-banner {
+  background: rgba(0, 229, 255, 0.05);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.6rem;
+  margin-bottom: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--color-accent);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.decoder-kv-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.decoder-kv-table th, .decoder-kv-table td {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.decoder-kv-table th {
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.decoder-kv-table td.field-name {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.decoder-kv-table td.field-val {
+  color: var(--text-primary);
+}
+
 .header-left {
   display: flex;
   align-items: center;
