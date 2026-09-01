@@ -1,0 +1,26 @@
+# ASTRA Live Orbit & Ground Station Configuration
+
+cache_ttl_seconds: 7200 # 2-hour minimum CelesTrak refresh policy
+celestrak_base_url: "https://celestrak.org/NORAD/elements/gp.php"
+satnogs_base_url: "https://db.satnogs.org/api"
+
+satellites:
+  - norad_id: 44804
+    name: "CARTOSAT-3"
+    designator: "2019-081A"
+    description: "Earth Observation Satellite (ISRO)"
+  - norad_id: 51656
+    name: "EOS-04"
+    designator: "2022-006A"
+    description: "Radar Imaging Satellite (ISRO RISAT-1A)"
+  - norad_id: 25544
+    name: "ISS"
+    designator: "1998-067A"
+    description: "International Space Station"
+
+ground_station:
+  name: "DEMO GROUND STATION"
+  latitude: 17.3850 # Bengaluru/Hyderabad regional reference
+  longitude: 78.4867
+  altitude_km: 0.545
+  min_elevation_deg: 5.0

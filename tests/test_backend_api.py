@@ -95,3 +95,80 @@ def test_demo_scenario_flow_and_feedback():
     res = client.get("/api/alerts/current")
     assert res.status_code == 200
     assert res.json()["status"] == "CRITICAL_COMPONENT_ANOMALY"
+
+
+def test_orbit_satellites():
+    res = client.get("/api/orbit/satellites")
+    assert res.status_code == 200
+    data = res.json()
+    assert "satellites" in data
+    assert len(data["satellites"]) >= 3
+    assert data["ground_station"]["name"] == "DEMO GROUND STATION"
+
+
+def test_orbit_state():
+    res = client.get("/api/orbit/state/25544")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["norad_id"] == 25544
+    assert "current_position" in data
+    assert "latitude" in data["current_position"]
+    assert "ground_tracks" in data
+    assert "ground_station_pass" in data
+
+
+def test_orbit_satnogs():
+    res = client.get("/api/orbit/satnogs/25544")
+    assert res.status_code == 200
+    data = res.json()
+    assert "status" in data
+
+
+def test_orbit_websocket():
+    with client.websocket_connect("/ws/orbit/25544") as websocket:
+        data = websocket.receive_json()
+        assert data["norad_id"] == 25544
+        assert "current_position" in data
+
+
+def test_v1_global_catalog_and_summary():
+    res = client.get("/api/v1/global/summary")
+    assert res.status_code == 200
+    summary = res.json()
+    assert summary["total_catalog_objects"] >= 4
+    assert "LEO" in summary["orbit_regimes"]
+
+    res_cat = client.get("/api/v1/global/catalog?q=ISS")
+    assert res_cat.status_code == 200
+    catalog = res_cat.json()
+    assert catalog["count"] >= 1
+    assert catalog["objects"][0]["norad_id"] == 25544
+
+
+def test_v1_global_states_and_fleet():
+    res = client.get("/api/v1/global/states")
+    assert res.status_code == 200
+    data = res.json()
+    assert "states" in data
+    assert len(data["states"]) >= 4
+
+    res_fleet = client.get("/api/v1/fleet")
+    assert res_fleet.status_code == 200
+    fleet = res_fleet.json()
+    assert fleet["authorized_count"] == 1
+    assert fleet["spacecraft"][0]["spacecraft_id"] == "ESA_MISSION_1"
+
+
+def test_v1_spacecraft_overview_and_sources_status():
+    res = client.get("/api/v1/spacecraft/ESA_MISSION_1/overview")
+    assert res.status_code == 200
+    sc = res.json()
+    assert sc["name"] == "ESA Mission-1 Satellite"
+    assert len(sc["parameters"]) == 6
+
+    res_src = client.get("/api/v1/sources/status")
+    assert res_src.status_code == 200
+    srcs = res_src.json()
+    assert len(srcs["sources"]) >= 2
+
+
