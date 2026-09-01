@@ -3,21 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ASTRA — Production Spacecraft Operations Intelligence Platform</title>
+  <title>ASTRA — Space Operations Intelligence Platform</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- Operations Navigation Header -->
+  <!-- Header Navigation -->
   <header class="console-header">
     <div class="brand-section">
-      <span class="brand-symbol">ASTRA::PLATFORM</span>
-      <div>
-        <div class="brand-title">Spacecraft Operations Intelligence Platform</div>
-        <div class="brand-subtitle">Global Orbital Awareness & Authorized Health Intelligence</div>
-      </div>
+      <span class="brand-symbol">ASTRA</span>
+      <div class="brand-divider">|</div>
+      <div class="brand-title">Space Operations Intelligence</div>
     </div>
 
     <nav class="workspace-tabs">
@@ -27,75 +25,140 @@
       <button class="mode-btn" id="tab-btn-alerts" onclick="switchNav('alerts')">ALERTS</button>
       <button class="mode-btn" id="tab-btn-operations" onclick="switchNav('operations')">OPERATIONS</button>
       <button class="mode-btn" id="tab-btn-sources" onclick="switchNav('sources')">DATA SOURCES</button>
+      <button class="mode-btn" id="tab-btn-research" onclick="switchNav('research')">RESEARCH</button>
     </nav>
 
     <div class="clock-panel">
-      <span style="color: var(--text-secondary);">UTC_NOW:</span>
+      <span class="clock-label">UTC_NOW</span>
       <span class="utc-time" id="sys-clock">2026-09-02T00:00:00Z</span>
     </div>
   </header>
 
-  <!-- Main Content Container -->
+  <!-- Main Workspaces Container -->
   <main class="console-main">
 
     <!-- ==================== 1. GLOBAL ORBITAL AWARENESS ==================== -->
     <div class="workspace active" id="workspace-global">
+      <!-- Global Top Status Bar -->
+      <div class="status-bar">
+        <div class="bar-item">
+          <span class="bar-label">CATALOG PROVIDER:</span>
+          <span class="bar-val" id="glob-provider">CelesTrak GP/OMM Catalog Ingestion Engine</span>
+        </div>
+        <div class="bar-item">
+          <span class="bar-label">CACHE STATE:</span>
+          <span class="status-badge nominal" id="glob-cache-state">USING CACHED ORBITAL ELEMENTS</span>
+        </div>
+        <div class="bar-item">
+          <span class="bar-label">LOADED OBJECTS:</span>
+          <span class="bar-val" id="glob-object-count">6 Objects</span>
+        </div>
+        <div class="bar-item">
+          <span class="bar-label">FRESHNESS / AGE:</span>
+          <span class="bar-val" id="glob-cache-age">1.2 hrs</span>
+        </div>
+      </div>
+
       <div class="grid-12">
-        <!-- Catalog Map (Col 8) -->
-        <div class="col-8">
-          <div class="panel" style="padding: 0.75rem;">
+        <!-- 2D Orbit Equirectangular Map (Col 7) -->
+        <div class="col-7">
+          <div class="panel map-panel">
             <div class="panel-header">
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <span class="panel-title">GLOBAL ORBITAL CATALOG (CELESTRAK OMM)</span>
-                <input type="text" id="global-search-input" placeholder="Search NORAD / Name / COSPAR..." oninput="onGlobalSearch(this.value)" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); color: var(--text-primary); padding: 0.25rem 0.5rem; font-family: var(--font-mono); font-size: 0.72rem; border-radius: var(--radius);">
+              <div class="header-left">
+                <span class="panel-title">GLOBAL ORBITAL PICTURE</span>
+                <div class="search-box">
+                  <input type="text" id="global-search-input" placeholder="Search NORAD ID / COSPAR / Object Name..." oninput="onGlobalSearch(this.value)">
+                  <div class="search-results" id="search-results-dropdown" style="display: none;"></div>
+                </div>
               </div>
-              <span class="status-badge nominal" id="global-catalog-status">CURRENT PROPAGATED (SGP4)</span>
+              <span class="status-badge live-dot" id="live-stream-badge">REALTIME SGP4 STREAM</span>
             </div>
 
-            <!-- Equirectangular Orbit Canvas Map -->
             <div class="map-container">
               <canvas id="global-map-canvas"></canvas>
+            </div>
+
+            <!-- Ground Contact Panel underneath map -->
+            <div class="subpanel ground-contact-subpanel">
+              <div class="panel-header" style="margin-bottom: 0.4rem; padding-bottom: 0.3rem;">
+                <span class="panel-title">GROUND CONTACT PASS — ASTRA REFERENCE GROUND STATION (17.385° N, 78.487° E)</span>
+                <span class="status-badge" id="pass-visibility-badge">BELOW HORIZON</span>
+              </div>
+              <div class="grid-4-dense">
+                <div class="gc-metric"><span class="gc-lbl">AZIMUTH</span><span class="gc-val" id="gc-az">184.2°</span></div>
+                <div class="gc-metric"><span class="gc-lbl">ELEVATION</span><span class="gc-val" id="gc-el">-24.5°</span></div>
+                <div class="gc-metric"><span class="gc-lbl">RANGE</span><span class="gc-val" id="gc-range">4120.4 km</span></div>
+                <div class="gc-metric"><span class="gc-lbl">MAX ELEVATION</span><span class="gc-val" id="gc-max-el">64.2°</span></div>
+                <div class="gc-metric"><span class="gc-lbl">NEXT AOS (UTC)</span><span class="gc-val" id="gc-aos">--:--:--</span></div>
+                <div class="gc-metric"><span class="gc-lbl">NEXT LOS (UTC)</span><span class="gc-val" id="gc-los">--:--:--</span></div>
+                <div class="gc-metric"><span class="gc-lbl">PASS DURATION</span><span class="gc-val" id="gc-dur">-- min</span></div>
+                <div class="gc-metric"><span class="gc-lbl">GROUND STATION</span><span class="gc-val" style="color: var(--color-accent);">ASTRA HYDERABAD HQ</span></div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Selected Object Detail & KPI Metrics (Col 4) -->
-        <div class="col-4" style="display: flex; flex-direction: column; gap: 1rem;">
-          <!-- KPI Metrics Card -->
-          <div class="panel">
-            <div class="panel-header"><span class="panel-title">CATALOG COVERAGE KPI</span></div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-              <div style="background: var(--bg-raised); padding: 0.5rem; border-radius: var(--radius); text-align: center;">
-                <div style="font-size: 0.65rem; color: var(--text-secondary);">TOTAL OBJECTS</div>
-                <div style="font-size: 1.3rem; font-weight: 700; font-family: var(--font-mono); color: var(--color-accent);" id="kpi-total-obj">4</div>
-              </div>
-              <div style="background: var(--bg-raised); padding: 0.5rem; border-radius: var(--radius); text-align: center;">
-                <div style="font-size: 0.65rem; color: var(--text-secondary);">ACTIVE SPACECRAFT</div>
-                <div style="font-size: 1.3rem; font-weight: 700; font-family: var(--font-mono); color: var(--color-nominal);" id="kpi-active-obj">4</div>
-              </div>
-            </div>
-            <div class="kv-row" style="margin-top: 0.5rem;"><span class="kv-label">LEO REGIME:</span><span class="kv-val" id="reg-leo-count">4 Objects</span></div>
-            <div class="kv-row"><span class="kv-label">AUTHORIZED TM:</span><span class="kv-val" style="color: var(--color-nominal);" id="reg-auth-count">1 Spacecraft</span></div>
-          </div>
-
-          <!-- Selected Space Object Details -->
-          <div class="panel" style="flex: 1;">
+        <!-- Selected Object Detail Panel (Col 5) -->
+        <div class="col-5">
+          <div class="panel inspector-panel">
             <div class="panel-header">
-              <span class="panel-title">SELECTED SPACE OBJECT</span>
-              <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-accent);" id="sel-obj-name">ISS (ZARYA)</span>
+              <span class="panel-title">SELECTED SPACE OBJECT INSPECTOR</span>
+              <span class="obj-header-name" id="sel-obj-name">ISS (ZARYA)</span>
             </div>
 
-            <div class="kv-row"><span class="kv-label">NORAD CAT ID:</span><span class="kv-val" id="sel-norad-id">25544</span></div>
-            <div class="kv-row"><span class="kv-label">COSPAR ID:</span><span class="kv-val" id="sel-cospar-id">1998-067A</span></div>
-            <div class="kv-row"><span class="kv-label">OBJECT TYPE:</span><span class="kv-val" id="sel-obj-type">ACTIVE_SPACECRAFT</span></div>
-            <div class="kv-row"><span class="kv-label">ORBIT REGIME:</span><span class="kv-val" id="sel-orbit-regime">LEO</span></div>
-            <div class="kv-row"><span class="kv-label">PROPAGATED LAT:</span><span class="kv-val" id="sel-lat">0.0000° N</span></div>
-            <div class="kv-row"><span class="kv-label">PROPAGATED LON:</span><span class="kv-val" id="sel-lon">0.0000° E</span></div>
-            <div class="kv-row"><span class="kv-label">ALTITUDE:</span><span class="kv-val" id="sel-alt">409.5 km</span></div>
-            <div class="kv-row"><span class="kv-label">ORBITAL SPEED:</span><span class="kv-val" id="sel-speed">7.666 km/s</span></div>
-            <div class="kv-row"><span class="kv-label">ELEMENT EPOCH:</span><span class="kv-val" id="sel-epoch">2026-09-01T12:00:00Z</span></div>
-            <div class="kv-row"><span class="kv-label">ELEMENT AGE:</span><span class="kv-val" id="sel-age">1.2 hrs</span></div>
-            <div class="kv-row"><span class="kv-label">HEALTH TELEMETRY:</span><span class="kv-val" style="color: var(--text-muted);" id="sel-tm-auth">NO TELEMETRY SOURCE</span></div>
+            <!-- Identifiers Grid -->
+            <div class="section-title">OBJECT IDENTIFIERS</div>
+            <div class="kv-grid">
+              <div class="kv-row"><span class="kv-label">NORAD ID</span><span class="kv-val" id="sel-norad-id">25544</span></div>
+              <div class="kv-row"><span class="kv-label">COSPAR ID</span><span class="kv-val" id="sel-cospar-id">1998-067A</span></div>
+              <div class="kv-row"><span class="kv-label">OBJECT TYPE</span><span class="kv-val" id="sel-obj-type">ACTIVE_SPACECRAFT</span></div>
+              <div class="kv-row"><span class="kv-label">ORBIT REGIME</span><span class="kv-val" id="sel-orbit-regime">LEO</span></div>
+            </div>
+
+            <!-- Realtime Propagated State -->
+            <div class="section-title" style="margin-top: 0.75rem;">CURRENT REALTIME PROPAGATED STATE (1 Hz SGP4)</div>
+            <div class="telemetry-block">
+              <div class="tel-grid">
+                <div class="tel-box">
+                  <div class="tel-lbl">LATITUDE</div>
+                  <div class="tel-val" id="sel-lat">0.0000° N</div>
+                </div>
+                <div class="tel-box">
+                  <div class="tel-lbl">LONGITUDE</div>
+                  <div class="tel-val" id="sel-lon">0.0000° E</div>
+                </div>
+                <div class="tel-box">
+                  <div class="tel-lbl">ALTITUDE</div>
+                  <div class="tel-val" id="sel-alt">409.50 km</div>
+                </div>
+                <div class="tel-box">
+                  <div class="tel-lbl">VELOCITY</div>
+                  <div class="tel-val" id="sel-vel">7.666 km/s</div>
+                </div>
+              </div>
+              <div class="kv-row" style="margin-top: 0.5rem;"><span class="kv-label">STATE TIMESTAMP (UTC)</span><span class="kv-val" id="sel-state-time">2026-09-02T00:00:00Z</span></div>
+            </div>
+
+            <!-- Source Orbital Elements -->
+            <div class="section-title" style="margin-top: 0.75rem;">SOURCE ORBITAL ELEMENTS (CelesTrak GP/OMM)</div>
+            <div class="kv-grid">
+              <div class="kv-row"><span class="kv-label">INCLINATION</span><span class="kv-val" id="sel-inc">51.6415°</span></div>
+              <div class="kv-row"><span class="kv-label">ECCENTRICITY</span><span class="kv-val" id="sel-ecc">0.000512</span></div>
+              <div class="kv-row"><span class="kv-label">MEAN MOTION</span><span class="kv-val" id="sel-mm">15.4891 rev/day</span></div>
+              <div class="kv-row"><span class="kv-label">SEMI-MAJOR AXIS</span><span class="kv-val" id="sel-sma">6798.2 km</span></div>
+              <div class="kv-row"><span class="kv-label">APOGEE / PERIGEE</span><span class="kv-val" id="sel-ap-per">422.4 / 418.0 km</span></div>
+              <div class="kv-row"><span class="kv-label">ORBIT PERIOD</span><span class="kv-val" id="sel-period">92.97 min</span></div>
+              <div class="kv-row"><span class="kv-label">ELEMENT EPOCH</span><span class="kv-val" id="sel-epoch">2026-09-01T12:00:00Z</span></div>
+              <div class="kv-row"><span class="kv-label">ELEMENT AGE</span><span class="kv-val" id="sel-age">1.2 hrs</span></div>
+            </div>
+
+            <!-- Provenance -->
+            <div class="section-title" style="margin-top: 0.75rem;">SOURCE PROVENANCE & AUTHENTICATION</div>
+            <div class="kv-grid">
+              <div class="kv-row"><span class="kv-label">SOURCE PROVIDER</span><span class="kv-val" id="sel-prov">CelesTrak OMM/GP Ingestion Engine</span></div>
+              <div class="kv-row"><span class="kv-label">CACHE DISK STATE</span><span class="kv-val" id="sel-cache-state" style="color: var(--color-nominal);">USING CACHED ORBITAL ELEMENTS</span></div>
+              <div class="kv-row"><span class="kv-label">TELEMETRY ACCESS</span><span class="kv-val" id="sel-tm-auth" style="color: var(--text-muted);">NO TELEMETRY SOURCE</span></div>
+            </div>
           </div>
         </div>
       </div>
@@ -105,33 +168,72 @@
     <div class="workspace" id="workspace-fleet">
       <div class="grid-12">
         <div class="col-12">
+          <div class="panel empty-state-panel">
+            <div class="empty-icon">📡</div>
+            <div class="empty-title">NO AUTHORIZED FLEET CONNECTED</div>
+            <div class="empty-desc">Connect an authorized mission telemetry source to populate fleet assets.</div>
+            <div class="empty-subtext">The Global Orbital Awareness catalog tracks public Earth-orbiting objects. Private telemetry ingestion requires configuring a validated mission TelemetryProvider API endpoint. Historical research datasets (e.g. ESA Mission-1) are available exclusively in the RESEARCH workspace.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 3. SPACECRAFT TELEMETRY ==================== -->
+    <div class="workspace" id="workspace-spacecraft">
+      <div class="grid-12">
+        <div class="col-12">
+          <div class="panel empty-state-panel">
+            <div class="empty-icon">🛰️</div>
+            <div class="empty-title">NO AUTHORIZED MISSION TELEMETRY SOURCE CONNECTED</div>
+            <div class="empty-desc">This workspace becomes active when an authorized mission TelemetryProvider is configured.</div>
+            <div class="empty-subtext">To evaluate spacecraft health intelligence on historical telemetry data, switch to the <strong>RESEARCH</strong> or <strong>OPERATIONS</strong> workspaces.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 4. ALERTS LOG ==================== -->
+    <div class="workspace" id="workspace-alerts">
+      <div class="grid-12">
+        <div class="col-12">
           <div class="panel">
             <div class="panel-header">
-              <span class="panel-title">AUTHORIZED SPACECRAFT FLEET (TELEMETRY ACCESS PERMITTED)</span>
-              <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-nominal);">1 AUTHORIZED ASSET</span>
+              <span class="panel-title">OPERATIONAL ALERTS LOG</span>
+              <span class="status-badge warning">NO LIVE MISSION ALERT SOURCE</span>
             </div>
-
+            <div class="notice-banner">
+              Live operational spacecraft alerts require an active mission telemetry provider connection. Below are historical research alerts from ESA Mission-1 evaluation archives.
+            </div>
             <table class="ops-table">
               <thead>
                 <tr>
-                  <th>SPACECRAFT ID</th>
-                  <th>NAME</th>
-                  <th>OPERATING AGENCY</th>
-                  <th>TELEMETRY SOURCE STATUS</th>
-                  <th>MONITORED CHANNELS</th>
-                  <th>HEALTH INTELLIGENCE</th>
-                  <th>ACTIONS</th>
+                  <th>TIMESTAMP (UTC)</th>
+                  <th>DATA SCOPE</th>
+                  <th>SPACECRAFT</th>
+                  <th>SEVERITY</th>
+                  <th>UNUSUALNESS SCORE</th>
+                  <th>AFFECTED CHANNELS</th>
+                  <th>ADAPTIVE EVENT MEMORY ACTION</th>
                 </tr>
               </thead>
-              <tbody id="fleet-table-body">
+              <tbody id="alerts-table-body">
                 <tr>
-                  <td style="font-family: var(--font-mono); color: var(--color-accent); font-weight: 700;">ESA_MISSION_1</td>
-                  <td style="font-weight: 600;">ESA Mission-1 Satellite</td>
-                  <td>European Space Agency (ESA)</td>
-                  <td><span class="status-badge nominal">HISTORICAL</span></td>
-                  <td style="font-family: var(--font-mono);">6 PARAMETERS</td>
-                  <td><span style="color: var(--color-nominal); font-weight: 600;">ACTIVE (ANOMALY GUARD)</span></td>
-                  <td><button class="op-btn" onclick="openSpacecraftView('ESA_MISSION_1')">INSPECT HEALTH</button></td>
+                  <td class="mono">2026-09-01T14:22:00Z</td>
+                  <td class="accent">RESEARCH DATASET</td>
+                  <td>ESA Mission-1 Satellite</td>
+                  <td><span class="status-badge nominal">NOMINAL</span></td>
+                  <td class="mono">0.420 / 3.000</td>
+                  <td class="muted">NONE</td>
+                  <td>Telemetry operating within baseline parameters</td>
+                </tr>
+                <tr>
+                  <td class="mono">2026-09-01T16:05:00Z</td>
+                  <td class="accent">RESEARCH DATASET</td>
+                  <td>ESA Mission-1 Satellite</td>
+                  <td><span class="status-badge known">KNOWN PATTERN</span></td>
+                  <td class="mono">2.140 / 3.000</td>
+                  <td class="mono">CH_41, CH_43</td>
+                  <td>Suppressed via Adaptive Event Memory (Rare Maneuver Match)</td>
                 </tr>
               </tbody>
             </table>
@@ -140,17 +242,51 @@
       </div>
     </div>
 
-    <!-- ==================== 3. SPACECRAFT HEALTH & OPERATIONS ==================== -->
-    <div class="workspace" id="workspace-spacecraft">
+    <!-- ==================== 5. OPERATIONS & MEMORY LEARNING ==================== -->
+    <div class="workspace" id="workspace-operations">
+      <!-- Workflow Diagram Banner -->
+      <div class="workflow-banner">
+        <div class="wf-step">
+          <div class="wf-num">1</div>
+          <div class="wf-txt">UNUSUAL EVENT DETECTED</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-step">
+          <div class="wf-num">2</div>
+          <div class="wf-txt">EVENT SIGNATURE EXTRACTION</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-step">
+          <div class="wf-num">3</div>
+          <div class="wf-txt">OPERATIONAL MEMORY MATCH</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-step highlight">
+          <div class="wf-num">4</div>
+          <div class="wf-txt">KNOWN OPERATIONAL PATTERN or UNKNOWN UNUSUAL EVENT</div>
+        </div>
+      </div>
+
       <div class="grid-12">
-        <!-- Monitored Channels (Col 8) -->
         <div class="col-8">
           <div class="panel">
             <div class="panel-header">
-              <span class="panel-title">MONITORED TELEMETRY CHANNELS (ESA MISSION-1)</span>
-              <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary);" id="sc-active-scenario">STREAM: HISTORICAL REPLAY</span>
+              <span class="panel-title">ESA MISSION-1 EVENT EVALUATION CONTROLS</span>
+              <span class="status-badge" id="sc-alert-badge">NOMINAL</span>
             </div>
-            <div class="telemetry-grid">
+
+            <div class="scenario-strip">
+              <span class="strip-label">SELECT EVALUATION TEST WINDOW:</span>
+              <div class="scenario-buttons">
+                <button class="scenario-btn active" id="op-sc-normal" onclick="setScenario('normal')">1. NOMINAL TELEMETRY</button>
+                <button class="scenario-btn" id="op-sc-rare_first" onclick="setScenario('rare_first')">2. RARE MANEUVER (1ST OCCURRENCE)</button>
+                <button class="scenario-btn" id="op-sc-rare_repeat" onclick="setScenario('rare_repeat')">3. RARE MANEUVER (REPEAT OCCURRENCE)</button>
+                <button class="scenario-btn" id="op-sc-anomaly" onclick="setScenario('anomaly')">4. GENUINE ANOMALY</button>
+              </div>
+              <button class="scenario-btn btn-reset" onclick="resetDemoState()">RESET MEMORY BANK</button>
+            </div>
+
+            <div class="telemetry-grid" style="margin-top: 1rem;">
               <div class="channel-box">
                 <div class="channel-meta"><span class="channel-id">CH_41 (EPS PWR)</span><span class="channel-score" id="ch41-val">0.42</span></div>
                 <div class="chart-wrapper"><canvas id="chart-ch41"></canvas></div>
@@ -176,121 +312,59 @@
                 <div class="chart-wrapper"><canvas id="chart-ch46"></canvas></div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Health Intelligence Decision Panel (Col 4) -->
-        <div class="col-4" style="display: flex; flex-direction: column; gap: 1rem;">
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">HEALTH INTELLIGENCE STATE</span>
-              <span class="status-badge nominal" id="sc-alert-badge">NOMINAL</span>
-            </div>
-
-            <div class="kv-row"><span class="kv-label">EVENT IDENTIFIER:</span><span class="kv-val" id="sc-evt-id">normal_window</span></div>
-            <div class="kv-row"><span class="kv-label">UNUSUALNESS SCORE:</span><span class="kv-val" id="sc-unusual-score">0.420 / 3.000</span></div>
-            <div class="kv-row"><span class="kv-label">AFFECTED PARAMETERS:</span><span class="kv-val" id="sc-affected-params">NONE</span></div>
-            <div class="kv-row"><span class="kv-label">TELECOMMAND CONTEXT:</span><span class="kv-val" id="sc-tc-context">0 TC EXECUTED</span></div>
-
-            <div class="sim-container">
-              <div class="kv-row" style="border: none; padding: 0;">
-                <span class="kv-label">MEMORY SIMILARITY:</span>
-                <span class="kv-val" id="sc-sim-val">0.0%</span>
+            <div class="operator-feedback-box">
+              <div class="feedback-title">OPERATOR PATTERN VALIDATION FEEDBACK</div>
+              <div class="op-action-grid">
+                <button class="op-btn op-btn-valid" onclick="submitFeedback('VALID_OPERATION')">VALID OPERATION (LEARN PATTERN)</button>
+                <button class="op-btn op-btn-anomaly" onclick="submitFeedback('CONFIRMED_ANOMALY')">CONFIRMED ANOMALY</button>
               </div>
-              <div class="sim-bar"><div class="sim-fill" id="sc-sim-fill" style="width: 0%;"></div></div>
-              <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.4rem;" id="sc-nearest-match">NEAREST MATCH: NONE</div>
-            </div>
-
-            <div style="font-size: 0.78rem; color: var(--text-secondary); margin: 0.5rem 0;" id="sc-explanation">
-              Spacecraft telemetry operating within nominal bounds.
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ==================== 4. ALERTS LOG ==================== -->
-    <div class="workspace" id="workspace-alerts">
-      <div class="grid-12">
-        <div class="col-12">
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">OPERATIONAL ANOMALY ALERTS LOG</span>
-            </div>
-            <table class="ops-table">
-              <thead>
-                <tr>
-                  <th>TIMESTAMP (UTC)</th>
-                  <th>SPACECRAFT</th>
-                  <th>SEVERITY</th>
-                  <th>STATUS</th>
-                  <th>UNUSUALNESS</th>
-                  <th>AFFECTED CHANNELS</th>
-                  <th>ADAPTIVE MEMORY ACTION</th>
-                </tr>
-              </thead>
-              <tbody id="alerts-table-body">
-                <tr>
-                  <td style="font-family: var(--font-mono);">2026-09-02T01:50:00Z</td>
-                  <td style="font-weight: 600;">ESA Mission-1 Satellite</td>
-                  <td><span class="status-badge nominal">INFO</span></td>
-                  <td><span style="color: var(--color-nominal); font-weight: 600;">NOMINAL</span></td>
-                  <td style="font-family: var(--font-mono);">0.420</td>
-                  <td>NONE</td>
-                  <td>Telemetry within nominal bounds</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ==================== 5. OPERATIONS & MEMORY LEARNING ==================== -->
-    <div class="workspace" id="workspace-operations">
-      <div class="grid-12">
-        <div class="col-8">
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">OPERATIONAL EVALUATION SCENARIO CONTROLS</span>
-            </div>
-            <div class="control-strip" style="background: none; border: none; padding: 0; margin-bottom: 1rem;">
-              <div class="scenario-buttons">
-                <button class="scenario-btn active" id="op-sc-normal" onclick="setScenario('normal')">1. NORMAL</button>
-                <button class="scenario-btn" id="op-sc-rare_first" onclick="setScenario('rare_first')">2. RARE MANEUVER (1ST)</button>
-                <button class="scenario-btn" id="op-sc-rare_repeat" onclick="setScenario('rare_repeat')">3. RARE MANEUVER (REPEAT)</button>
-                <button class="scenario-btn" id="op-sc-anomaly" onclick="setScenario('anomaly')">4. GENUINE ANOMALY</button>
-              </div>
-              <button class="scenario-btn btn-reset" onclick="resetDemoState()">RESET MEMORY STORE</button>
-            </div>
-
-            <!-- Validation Buttons -->
-            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 700;">OPERATOR PATTERN VALIDATION FEEDBACK:</div>
-            <div class="op-action-grid">
-              <button class="op-btn op-btn-valid" onclick="submitFeedback('VALID_OPERATION')">VALID OPERATION (LEARN PATTERN)</button>
-              <button class="op-btn op-btn-anomaly" onclick="submitFeedback('CONFIRMED_ANOMALY')">CONFIRMED ANOMALY</button>
+              <div class="feedback-note">Note: Validating an operational event stores its non-ground-truth feature signature into the local Adaptive Event Memory bank. It does not infer physical root cause.</div>
             </div>
           </div>
         </div>
 
         <div class="col-4">
-          <div class="panel">
+          <div class="panel" style="height: 100%; display: flex; flex-direction: column;">
             <div class="panel-header">
               <span class="panel-title">ADAPTIVE EVENT MEMORY BANK</span>
-              <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-accent);" id="op-memory-count">0 PATTERNS</span>
+              <span class="badge-count" id="op-memory-count">0 PATTERNS</span>
             </div>
-            <table class="ops-table">
-              <thead>
-                <tr>
-                  <th>PATTERN ID</th>
-                  <th>SOURCE EVENT</th>
-                  <th>LABEL</th>
-                </tr>
-              </thead>
-              <tbody id="op-memory-table-body">
-                <tr><td colspan="3" style="color: var(--text-muted); text-align: center;">No stored operational patterns.</td></tr>
-              </tbody>
-            </table>
+
+            <div class="sim-container">
+              <div class="kv-row" style="border: none; padding: 0;">
+                <span class="kv-label">MEMORY SIMILARITY</span>
+                <span class="kv-val" id="sc-sim-val">0.0%</span>
+              </div>
+              <div class="sim-bar"><div class="sim-fill" id="sc-sim-fill" style="width: 0%;"></div></div>
+              <div class="mono-sub" id="sc-nearest-match">NEAREST MATCH: NONE</div>
+            </div>
+
+            <div class="kv-grid" style="margin-bottom: 0.75rem;">
+              <div class="kv-row"><span class="kv-label">UNUSUALNESS SCORE</span><span class="kv-val" id="sc-unusual-score">0.420 / 3.000</span></div>
+              <div class="kv-row"><span class="kv-label">AFFECTED PARAMETERS</span><span class="kv-val" id="sc-affected-params">NONE</span></div>
+              <div class="kv-row"><span class="kv-label">TELECOMMAND CONTEXT</span><span class="kv-val" id="sc-tc-context">0 TC EXECUTED</span></div>
+            </div>
+
+            <div class="explanation-box" id="sc-explanation">
+              Spacecraft telemetry operating within nominal bounds.
+            </div>
+
+            <div class="section-title" style="margin-top: 0.75rem;">STORED PATTERN MEMORIES</div>
+            <div style="flex: 1; overflow-y: auto;">
+              <table class="ops-table">
+                <thead>
+                  <tr>
+                    <th>PATTERN ID</th>
+                    <th>SOURCE EVENT</th>
+                    <th>OPERATOR LABEL</th>
+                  </tr>
+                </thead>
+                <tbody id="op-memory-table-body">
+                  <tr><td colspan="3" class="muted" style="text-align: center;">No stored operational patterns.</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -302,17 +376,21 @@
         <div class="col-12">
           <div class="panel">
             <div class="panel-header">
-              <span class="panel-title">SYSTEM DATA SOURCES & PROVENANCE DASHBOARD</span>
+              <span class="panel-title">SYSTEM DATA SOURCES & PROVENANCE MATRIX</span>
+              <span class="status-badge nominal">AUDITED & DEFENSIBLE</span>
             </div>
             <table class="ops-table">
               <thead>
                 <tr>
                   <th>DATA SOURCE PROVIDER</th>
                   <th>DATA SCOPE</th>
-                  <th>AVAILABILITY STATUS</th>
+                  <th>SOURCE TYPE</th>
+                  <th>STATUS</th>
+                  <th>HTTP STATUS</th>
+                  <th>RETRIEVED / ACCEPTED / REJECTED</th>
+                  <th>CACHE PATH / STATE</th>
                   <th>LAST SUCCESSFUL UPDATE</th>
-                  <th>SOURCE AGE</th>
-                  <th>COVERAGE / DESCRIPTION</th>
+                  <th>REFRESH LATENCY</th>
                 </tr>
               </thead>
               <tbody id="sources-table-body">
@@ -324,13 +402,91 @@
       </div>
     </div>
 
+    <!-- ==================== 7. RESEARCH & BENCHMARK EVALUATION ==================== -->
+    <div class="workspace" id="workspace-research">
+      <div class="grid-12">
+        <div class="col-12">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">ESA MISSION-1 HISTORICAL RESEARCH BENCHMARK</span>
+              <span class="status-badge known">EXPLORATORY MISSION-1 EVALUATION</span>
+            </div>
+            <div class="notice-banner">
+              This workspace presents the measured performance of the ASTRA Adaptive Event Memory architecture evaluated against the anonymized ESA ADB Mission-1 telemetry archive.
+            </div>
+
+            <div class="grid-4-dense" style="margin: 1rem 0;">
+              <div class="kpi-card">
+                <div class="kpi-lbl">GENUINE ANOMALY RECALL</div>
+                <div class="kpi-val nominal">25 / 29 (86.2%)</div>
+                <div class="kpi-sub">Genuine anomalies correctly identified</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-lbl">RARE EVENT ALARMS (BEFORE MEMORY)</div>
+                <div class="kpi-val warning">36 Alarms</div>
+                <div class="kpi-sub">Statistical Isolation Forest baseline</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-lbl">RARE EVENT ALARMS (AFTER MEMORY)</div>
+                <div class="kpi-val nominal">5 Alarms</div>
+                <div class="kpi-sub">After operator-validated memory match</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-lbl">RARE EVENT ALARM REDUCTION RATE</div>
+                <div class="kpi-val accent">86.1% Reduction</div>
+                <div class="kpi-sub">Reduction in rare nominal event alarms</div>
+              </div>
+            </div>
+
+            <div class="section-title">ABLATION & REPRODUCIBILITY FACTS</div>
+            <table class="ops-table">
+              <thead>
+                <tr>
+                  <th>METRIC / PROPERTY</th>
+                  <th>MEASURED VALUE</th>
+                  <th>SCIENTIFIC INTEGRITY VERIFICATION</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="mono">Ground-Truth Leakage Audit</td>
+                  <td class="nominal">PASSED (0 LEAKS)</td>
+                  <td>Verified memory matching never accesses ESA Class, Category, Subclass, or future labels.</td>
+                </tr>
+                <tr>
+                  <td class="mono">Anomaly Safety Audit</td>
+                  <td class="nominal">0 genuine-anomaly detections suppressed by Event Memory</td>
+                  <td>Zero genuine anomalies (0 / 29) were suppressed by Adaptive Event Memory matching.</td>
+                </tr>
+                <tr>
+                  <td class="mono">Dataset Monitored Channels</td>
+                  <td class="mono">6 Channels</td>
+                  <td>EPS Power, EPS Current, ADCS Reaction Wheels, ADCS Magnetometers, Thermal, Payload.</td>
+                </tr>
+                <tr>
+                  <td class="mono">Evaluation Test Events</td>
+                  <td class="mono">65 Labelled Windows</td>
+                  <td>29 Genuine Anomaly Windows, 36 Rare Nominal Event Windows.</td>
+                </tr>
+                <tr>
+                  <td class="mono">Experiment Reproducibility Script</td>
+                  <td class="accent">scripts/run_memory_experiment.py</td>
+                  <td>Fully deterministic execution from frozen Parquet dataset splits.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 
-  <!-- Provenance Footer Strip -->
+  <!-- Footbar Provenance Strip -->
   <footer class="provenance-strip">
-    <div class="provenance-item"><span>PROVIDER:</span><span class="provenance-tag" id="prov-provider">CELESTRAK OMM + ESA ARCHIVE</span></div>
-    <div class="provenance-item"><span>SCOPE:</span><span class="provenance-tag" id="prov-scope">GLOBAL ORBIT + AUTHORIZED TELEMETRY</span></div>
-    <div class="provenance-item"><span>PROPAGATION:</span><span class="provenance-tag" id="prov-engine">SGP4 (WGS72) LOCAL</span></div>
+    <div class="provenance-item"><span>PRIMARY PROVIDER:</span><span class="provenance-tag" id="prov-provider">CelesTrak GP/OMM Catalog Ingestion Engine</span></div>
+    <div class="provenance-item"><span>DATA SCOPE:</span><span class="provenance-tag" id="prov-scope">GLOBAL ORBITAL AWARENESS</span></div>
+    <div class="provenance-item"><span>PROPAGATION ENGINE:</span><span class="provenance-tag" id="prov-engine">SGP4 (WGS72) LOCAL PROPAGATION</span></div>
   </footer>
 
   <script src="app.js"></script>

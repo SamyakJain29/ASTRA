@@ -59,12 +59,30 @@ class OrbitCatalogProvider:
         return max(epochs).isoformat() if epochs else None
 
     @property
+    def cache_file_timestamp(self) -> str | None:
+        """Returns the ISO timestamp of the cache file on disk."""
+        if self._catalog_cache_file.exists():
+            mtime = datetime.fromtimestamp(self._catalog_cache_file.stat().st_mtime, tz=UTC)
+            return mtime.isoformat()
+        return None
+
+    @property
+    def cache_state(self) -> str:
+        """Determines explicit catalog cache state without ambiguous terms."""
+        if not self._objects_by_norad:
+            return "SOURCE UNAVAILABLE"
+        if not self.is_offline:
+            return "LIVE_ONLINE"
+        return "USING CACHED ORBITAL ELEMENTS"
+
+    @property
     def status_summary(self) -> dict[str, Any]:
         """Provides full catalog operational state and provenance metadata."""
-        state_str = "OFFLINE (USING CACHED ELEMENTS)" if self.is_offline else "ONLINE (NEAR-REAL-TIME SOURCE)"
         return {
             "provider": self.provider_name,
-            "status": state_str,
+            "source_url": f"{self.base_url}?GROUP=active&FORMAT=json",
+            "status": self.cache_state,
+            "cache_state": self.cache_state,
             "is_offline": self.is_offline,
             "http_status": self.last_http_status or ("200 OK" if not self.is_offline else "SOURCE OFFLINE"),
             "catalog_object_count": len(self._objects_by_norad),
@@ -72,6 +90,7 @@ class OrbitCatalogProvider:
             "objects_accepted": self.objects_accepted,
             "objects_rejected": self.objects_rejected,
             "cache_path": str(self._catalog_cache_file),
+            "cache_file_timestamp": self.cache_file_timestamp,
             "last_successful_refresh": self.last_successful_refresh.isoformat() if self.last_successful_refresh else None,
             "last_attempt_timestamp": self.last_attempt_timestamp.isoformat() if self.last_attempt_timestamp else None,
             "refresh_duration_ms": round(self.refresh_duration_ms, 2),
@@ -81,7 +100,7 @@ class OrbitCatalogProvider:
         }
 
     def load_initial_catalog(self) -> None:
-        """Loads cached catalog or populates fallback baseline catalog objects."""
+        """Loads cached catalog or flags catalog as unavailable if no cache exists."""
         if self._catalog_cache_file.exists():
             try:
                 with open(self._catalog_cache_file, encoding="utf-8") as f:
@@ -96,11 +115,15 @@ class OrbitCatalogProvider:
                 self.objects_accepted = len(self._objects_by_norad)
                 self.objects_rejected = self.objects_retrieved - self.objects_accepted
                 self.last_http_status = "200 OK (CACHED SNAPSHOT)"
+                self.is_offline = True
             except Exception as e:
                 self.last_error = f"Cache parse error: {e}"
+                self.is_offline = True
 
         if not self._objects_by_norad:
-            self._init_default_catalog()
+            self.is_offline = True
+            self.last_error = "No disk cache available and online retrieval pending"
+            self.last_http_status = "404 CACHE MISS"
 
     def _init_default_catalog(self) -> None:
         """Populates baseline catalog with key trackable Earth satellite objects."""
