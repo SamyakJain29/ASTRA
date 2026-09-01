@@ -1,16 +1,26 @@
-# Experiment-specific choices remain unset until the research protocol is defined.
 experiment:
-  name: null
-  description: null
+  name: "mission1_adaptive_memory_locked"
+  description: "Locked configuration for ESA Mission-1 telemetry adaptive memory experiment"
   random_seed: 42
 
-configs:
-  data: configs/data.yaml
-  baseline: configs/baseline.yaml
+detector:
+  channel_names: ["channel_41", "channel_42", "channel_43", "channel_44", "channel_45", "channel_46"]
+  threshold_std: 3.0
+
+feature_extraction:
+  window_sec: 60
+  tc_windows_sec: [300, 3600, 86400]
+
+memory:
+  similarity_threshold: 0.80
+  anomaly_protection_cand_score: 3.5
+  anomaly_protection_mem_score: 2.5
+  db_path: ":memory:"
 
 evaluation:
-  split_strategy: null
-  metrics: []
+  split_strategy: "temporal_chronological"
+  metrics: ["rare_event_alarm_reduction", "genuine_anomaly_recall", "false_suppression_rate"]
 
 output:
-  directory: null
+  report_path: "reports/astra_memory_experiment.md"
+  artifact_path: "artifacts/experiments/astra_memory_experiment.json"

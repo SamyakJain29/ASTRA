@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASTRA Mission Control — Spacecraft Telemetry Health Intelligence</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header Bar -->
+  <header class="glass-card header-bar">
+    <div class="brand-title">
+      <div>
+        <h1>ASTRA MISSION CONTROL</h1>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+          ESA Mission-1 Telemetry Health Intelligence &amp; Adaptive Event Memory Platform
+        </div>
+      </div>
+      <span class="brand-badge" id="sc-state-val">Nominal</span>
+    </div>
+    
+    <div style="display:flex; align-items:center; gap:1rem;">
+      <span class="brand-badge" id="memory-count-badge" style="background:rgba(168,85,247,0.1); border-color:rgba(168,85,247,0.3); color:var(--color-purple);">0 Patterns</span>
+      <div class="status-pill nominal" id="status-pill">
+        <div class="status-dot"></div>
+        <span id="status-text">Nominal Orbit Telemetry</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 4-Stage Interactive Judge Demo Bar -->
+  <section class="glass-card demo-controller">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div class="section-heading" style="margin-bottom:0;">
+        ⚡ 4-Stage Interactive Judge Demo Scenario Replay
+      </div>
+      <button class="demo-btn reset-btn" id="btn-reset-demo" style="flex-direction:row; align-items:center; padding:0.5rem 0.85rem;">
+        🔄 Reset Demo State
+      </button>
+    </div>
+    
+    <div class="demo-controls-grid">
+      <button class="demo-btn active" data-scenario="normal">
+        <span class="btn-title">Stage 1: Normal State</span>
+        <span class="btn-sub">Steady nominal orbit telemetry</span>
+      </button>
+      
+      <button class="demo-btn" data-scenario="rare_first">
+        <span class="btn-title">Stage 2: Rare Maneuver (1st)</span>
+        <span class="btn-sub">Triggers warning alert (learnable)</span>
+      </button>
+      
+      <button class="demo-btn" data-scenario="rare_repeat">
+        <span class="btn-title">Stage 3: Rare Maneuver (Repeat)</span>
+        <span class="btn-sub">Matches memory -> Alarm suppressed</span>
+      </button>
+
+      <button class="demo-btn" data-scenario="anomaly">
+        <span class="btn-title">Stage 4: Genuine Anomaly</span>
+        <span class="btn-sub">Critical alert preserved by guard</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Main Dashboard Content Grid -->
+  <main class="dashboard-grid">
+    <!-- Left: 6 Telemetry Channel Multi-Charts -->
+    <section style="display:flex; flex-direction:column; gap:1rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="section-heading">
+          📈 Real-Time Multi-Channel Telemetry (Channels 41 - 46)
+        </div>
+        <div style="font-size:0.8rem; color:var(--text-dim); font-family:var(--font-mono);">
+          Frequency: 0.1 Hz | Downsampled 80-pts
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="glass-card chart-card">
+          <div class="chart-header">
+            <span class="channel-name">Channel 41 (Temperature / Power)</span>
+            <span class="channel-val">CH_41</span>
+          </div>
+          <div class="canvas-container">
+            <canvas id="canvas-channel_41"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card chart-card">
+          <div class="chart-header">
+            <span class="channel-name">Channel 42 (Bus Voltage)</span>
+            <span class="channel-val">CH_42</span>
+          </div>
+          <div class="canvas-container">
+            <canvas id="canvas-channel_42"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card chart-card">
+          <div class="chart-header">
+            <span class="channel-name">Channel 43 (Current Load)</span>
+            <span class="channel-val">CH_43</span>
+          </div>
+          <div class="canvas-container">
+            <canvas id="canvas-channel_43"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card chart-card">
+          <div class="chart-header">
+            <span class="channel-name">Channel 44 (Reaction Wheel Speed)</span>
+            <span class="channel-val">CH_44</span>
+          </div>
+          <div class="canvas-container">
+            <canvas id="canvas-channel_44"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card chart-card">
+          <div class="chart-header">
+            <span class="channel-name">Channel 45 (Solar Array Output)</span>
+            <span class="channel-val">CH_45</span>
+          </div>
+          <div class="canvas-container">
+            <canvas id="canvas-channel_45"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card chart-card">
+          <div class="chart-header">
+            <span class="channel-name">Channel 46 (Thruster Pressure)</span>
+            <span class="channel-val">CH_46</span>
+          </div>
+          <div class="canvas-container">
+            <canvas id="canvas-channel_46"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right: Evidence & Adaptive Event Memory Panel -->
+    <aside class="sidebar-panel">
+      <!-- Active Alert Evidence Card -->
+      <div class="glass-card">
+        <div class="section-heading">🛡️ Event Intelligence Evidence</div>
+        
+        <div class="metric-row">
+          <span class="metric-label">Detector Category</span>
+          <span class="metric-val" id="alert-category">Nominal</span>
+        </div>
+
+        <div class="metric-row">
+          <span class="metric-label">Detector Anomaly Score</span>
+          <span class="metric-val" id="alert-score">0.42</span>
+        </div>
+
+        <div class="metric-row">
+          <span class="metric-label">Recent Telecommands</span>
+          <span class="metric-val" id="alert-tc-count">0 TCs (5m)</span>
+        </div>
+
+        <!-- Pattern Similarity Bar -->
+        <div class="similarity-box">
+          <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+            <span style="color:var(--text-muted);">Adaptive Memory Similarity</span>
+            <span style="font-weight:700; color:var(--color-accent);" id="sim-val">0.0%</span>
+          </div>
+          <div class="sim-bar-bg">
+            <div class="sim-bar-fill" id="sim-bar-fill" style="width:0%;"></div>
+          </div>
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.5rem;" id="nearest-match-desc">
+            No stored memory pattern matched (> 80.0% threshold)
+          </div>
+        </div>
+
+        <!-- Explanation & Recommendation -->
+        <div style="margin-top:0.75rem;">
+          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">System Explanation</div>
+          <div style="font-size:0.85rem; margin-top:0.25rem; color:var(--text-main);" id="alert-explanation">
+            Spacecraft telemetry operating within nominal 3-sigma bounds.
+          </div>
+        </div>
+
+        <div style="margin-top:0.75rem;">
+          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Recommended Action</div>
+          <div style="font-size:0.85rem; margin-top:0.25rem; color:var(--color-accent);" id="alert-action">
+            Continue routine telemetry monitoring.
+          </div>
+        </div>
+
+        <!-- Operator Feedback Action -->
+        <div style="margin-top:1.25rem; border-top:1px solid var(--border-card); padding-top:0.75rem;">
+          <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">Operator Validation Feedback</div>
+          <div class="feedback-actions">
+            <button class="btn-valid" id="btn-validate-op">✓ Valid Operation (Learn)</button>
+            <button class="btn-anomaly" id="btn-confirm-anom">⚠️ Confirm Anomaly</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Bottom Tabs: Memory Bank & Scientific Ablation -->
+  <section class="glass-card tabs-container">
+    <div class="tab-buttons">
+      <button class="tab-btn active" data-tab="memory">🧠 Adaptive Event Memory Bank</button>
+      <button class="tab-btn" data-tab="ablation">📊 Scientific Evaluation &amp; Context Ablation</button>
+    </div>
+
+    <div id="tab-content">
+      <!-- Content populated dynamically by app.js -->
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

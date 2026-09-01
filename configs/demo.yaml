@@ -1,0 +1,23 @@
+# ASTRA Precomputed Real Demo Scenario Configuration
+scenarios:
+  normal:
+    event_id: "normal_window"
+    category: "Nominal"
+    description: "Steady nominal operational state telemetry window"
+  rare_first:
+    event_id: "id_117"
+    category: "Rare Event"
+    class: "class_14"
+    description: "First occurrence of rare operational maneuver (triggers operator review)"
+  rare_repeat:
+    event_id: "id_123"
+    category: "Rare Event"
+    class: "class_14"
+    description: "Repeated occurrence of validated rare operational maneuver (matches memory)"
+  anomaly:
+    event_id: "id_118"
+    category: "Anomaly"
+    class: "class_3"
+    description: "Uncommanded genuine spacecraft component anomaly"
+
+artifact_path: "artifacts/demo_scenarios.json"

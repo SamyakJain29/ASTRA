@@ -27,6 +27,21 @@ class EventSignature:
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> EventSignature:
+        return cls(
+            event_id=data["event_id"],
+            start_timestamp=data["start_timestamp"],
+            end_timestamp=data["end_timestamp"],
+            duration_seconds=float(data.get("duration_seconds", 0.0)),
+            affected_channels=list(data.get("affected_channels", [])),
+            num_affected_channels=int(data.get("num_affected_channels", len(data.get("affected_channels", [])))),
+            telemetry_features=dict(data.get("telemetry_features", {})),
+            context_features=dict(data.get("context_features", {})),
+            feature_vector=list(data.get("feature_vector", [])),
+            feature_names=list(data.get("feature_names", [])),
+        )
+
 
 class EventSignatureExtractor:
     """Extracts telemetry statistics and operational telecommand context features."""

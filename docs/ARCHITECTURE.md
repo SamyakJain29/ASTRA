@@ -1,88 +1,69 @@
-# Architecture
+# ASTRA System Architecture
 
-## Purpose
+## Overview
 
-ASTRA uses a research-first, configuration-driven Python architecture. Phase 1 prioritizes inspectable data handling, interpretable baselines, reproducible evaluation, and a clear boundary between measured evidence and future ideas.
+ASTRA (Spacecraft Telemetry Health Intelligence Platform) is designed around a clean, reproducible Python research pipeline integrated with a high-performance FastAPI backend and a dark-mode glassmorphic Mission Control dashboard.
 
-This document describes intended component responsibilities. It does not imply that research algorithms or data pipelines have already been implemented.
+```mermaid
+flowchart TD
+    subgraph Data Layer ["Data Layer (data/processed/mission1)"]
+        CH["Channel Telemetry (Parquet)"]
+        EV["Event Windows (Parquet)"]
+        TC["Telecommand Logs (Parquet)"]
+    end
 
-## Data flow
+    subgraph Feature & Model Layer ["ASTRA Research Core (src/astra)"]
+        SPL["TemporalSplit (Train / Val / Test)"]
+        DET["MultiChannelSpacecraftDetector"]
+        SIG["EventSignatureExtractor"]
+        AEM["AdaptiveEventMemory (SQLite/Vector)"]
+    end
 
-The intended Phase 1 flow is:
+    subgraph App Layer ["Product Layer (app/)"]
+        API["FastAPI Backend (app/backend)"]
+        UI["Mission Control UI (app/frontend)"]
+    end
 
-```text
-explicit configuration
-        |
-        v
-dataset inspection -> reproducible preparation -> baseline execution -> evaluation
-        |                     |                        |                |
-        v                     v                        v                v
- observed metadata      derived datasets          predictions      measured metrics
+    CH --> DET
+    EV --> SIG
+    TC --> SIG
+    DET --> SIG
+    SIG --> AEM
+    AEM --> API
+    API --> UI
 ```
 
-Inputs and generated artifacts remain outside version control. Configuration, code, tests, and documentation are versioned so that derived data and results can later be reproduced.
+---
 
-## Package responsibilities
+## Package Structure & Responsibilities (`src/astra/`)
 
-The Python package lives under `src/astra/`.
+| Package / Directory | Implemented Responsibilities |
+| :--- | :--- |
+| `astra.data` | Dataset inspection, schema validation, PyArrow Parquet loaders, and temporal split partitions. Raw source data is strictly immutable. |
+| `astra.features` | `EventSignatureExtractor`: Generates 10-dimensional statistical telemetry and 9-dimensional telecommand context signatures (`tc_count_5m`, `nearest_tc_diff_sec`). |
+| `astra.models` | Baseline anomaly detectors (`GlobalStdDetector`, `MultiChannelSpacecraftDetector`, `IsolationForestDetector`). |
+| `astra.memory` | `AdaptiveEventMemory`: SQLite-backed vector similarity store using Cosine Distance math and score-based Anomaly Protection Guard (`cand_score_max > 3.5`). |
+| `astra.evaluation` | Reproducibility protocol, confusion matrix computation, and metric aggregation (Recall, Rare Event False Alarm Reduction Rate). |
+| `app.backend` | FastAPI REST API endpoints serving real-time telemetry, memory state queries, operator feedback validation, and precomputed demo scenarios. |
+| `app.frontend` | Glassmorphic Mission Control dashboard using Canvas 2D multi-channel telemetry graphs and 4-stage judge demo controller. |
 
-| Package | Phase 1 responsibility |
-| --- | --- |
-| `astra.data` | Dataset access, observed-schema validation, and reproducible transformations. Raw data must never be modified. |
-| `astra.features` | Deterministic feature construction after input fields and units have been verified. |
-| `astra.models` | Interpretable baseline interfaces and, when explicitly requested, statistical/dynamic threshold and Isolation Forest implementations. |
-| `astra.evaluation` | Split protocols, metric computation, and evaluation records with clearly documented aggregation rules. |
-| `astra.context` | Scaffold for later operational-context interfaces; no context algorithm is implemented now. |
-| `astra.memory` | Scaffold for later operator-validated event-memory interfaces; no memory algorithm is implemented now. |
-| `astra.explain` | Scaffold for later explanation interfaces; no explanation algorithm is implemented now. |
-| `astra.utils` | Small cross-cutting utilities, including reusable logging configuration. |
+---
 
-Dependencies should point from scripts into package modules, and from higher-level research workflows toward small reusable components. Package code must not depend on CLI scripts. Circular dependencies and unnecessary abstraction layers should be avoided.
+## Data Flow & Memory Pipeline
 
-## Command-line entry points
+1. **Telemetry & Anomaly Detection**:
+   - `MultiChannelSpacecraftDetector` calculates channel-wise 3-sigma anomaly scores for telemetry windows.
+2. **Signature Extraction**:
+   - `EventSignatureExtractor` aggregates telemetry statistics across channels 41–46 and correlates recent telecommands from `telecommands.parquet`.
+3. **Memory Query & Similarity Matching**:
+   - `AdaptiveEventMemory.query()` computes normalized cosine similarity between the current event vector and operator-validated signatures stored in SQLite.
+   - If `best_similarity >= 0.80` AND anomaly score does not trigger the Anomaly Guard (`max_score <= 3.5`), the alarm is classified as `KNOWN_OPERATIONAL_PATTERN` and suppressed.
+   - If anomaly score exceeds 3.5 or no memory matches, the alarm remains active (`UNKNOWN_UNUSUAL_EVENT` or `CRITICAL_COMPONENT_ANOMALY`).
 
-The `scripts/` directory exposes workflow boundaries without pretending that unfinished functionality exists:
+---
 
-- `inspect_dataset.py` is the entry point for safe structural inspection.
-- `prepare_subset.py` is the entry point for reproducible subset preparation.
-- `run_baseline.py` is the entry point for baseline execution.
-- `evaluate.py` is the entry point for evaluation.
+## Reproducibility & Integrity Safeguards
 
-During repository scaffolding, these commands may expose help and explicit TODO behavior. They must not emit fabricated data, anomaly scores, or results.
-
-## Configuration
-
-Configuration is separated by concern:
-
-- `configs/data.yaml` holds data-location and preparation placeholders.
-- `configs/baseline.yaml` holds baseline-selection and parameter placeholders.
-- `configs/experiment.yaml` holds experiment-control and evaluation placeholders.
-
-Placeholder values are engineering inputs, not claims about an ESA dataset. Dataset-specific field names, units, labels, sampling behavior, and partitions must be added only after inspection.
-
-## Storage boundaries
-
-- `data/raw/` contains immutable source files.
-- `data/interim/` contains intermediate transformations.
-- `data/processed/` contains reproducible final datasets, preferably in Parquet when appropriate.
-- `data/external/` contains separately sourced supporting data whose provenance must be recorded.
-
-Large data, checkpoints, caches, and experiment artifacts are ignored by Git. Raw data is never overwritten by preparation code.
-
-## Reproducibility and observability
-
-Research runs should eventually record configuration, input identity, code revision, environment, random seeds where relevant, and output locations. Logging must make workflow progress and failures inspectable without embedding secrets or duplicating large datasets.
-
-Important transformations require focused unit tests. Repository-level smoke tests verify imports, configuration readability, and the expected directory layout.
-
-## Current boundaries
-
-This scaffold does not include:
-
-- dataset downloads or an asserted ESA schema;
-- contextual, memory, or explanation algorithms;
-- neural networks;
-- a frontend or backend application;
-- authentication, microservices, or deployment infrastructure; or
-- experimental findings.
-
+- **Chronological Split**: Strict time-based boundaries (`MISSION1_VALIDATION_BOUNDARY`, `MISSION1_TEST_BOUNDARY`) prevent future data leakage.
+- **Zero Label Leakage**: Memory similarity matching operates strictly on un-labelled telemetry features and telecommand proximity. No ground-truth ESA category/class/subclass fields are used in inference.
+- **Config Locking**: All parameters are frozen in `configs/experiment.yaml` and `configs/demo.yaml`.
