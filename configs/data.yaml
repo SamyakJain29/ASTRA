@@ -1,0 +1,59 @@
+dataset:
+  identifier: esa_mission1
+  display_name: ESA Mission 1
+  source_provenance:
+    local_description: Local Mission-1 archive verified as Zenodo v1 bytes
+    authoritative_source: https://doi.org/10.5281/zenodo.12528696
+    release: "1.0"
+    publication_date: "2024-06-25"
+    acquisition_date: null
+    license: null
+
+  archive:
+    path: data/raw/esa_adb/ESA-Mission1.zip
+    inspection_profile: artifacts/data/mission1_profile.json
+    expected_filename: ESA-Mission1.zip
+    expected_size_bytes: 3776246054
+    expected_sha256: 8c81edb1e81af9084f38a3cc06fa06dbea73b504c99ce1b0fb92bda996b801a7
+    expected_md5: 80750189d171f5f398fb3d96c49df12b
+
+  extracted:
+    root: data/interim/esa_adb/mission1
+    dataset_directory: ESA-Mission1
+    channels_metadata: channels.csv
+    labels: labels.csv
+    anomaly_types: anomaly_types.csv
+    telecommands_metadata: telecommands.csv
+    channels_directory: channels
+    telecommands_directory: telecommands
+
+subset:
+  channel_numeric_ids:
+    - 41
+    - 42
+    - 43
+    - 44
+    - 45
+    - 46
+
+outputs:
+  processed_root: data/processed/mission1
+  channels_directory: data/processed/mission1/channels
+  events: data/processed/mission1/events.parquet
+  telecommands: data/processed/mission1/telecommands.parquet
+  provenance: artifacts/data/mission1_provenance.json
+  manifest: artifacts/data/mission1_subset_manifest.json
+  quality_report: reports/mission1_subset_quality.md
+
+parquet:
+  compression: zstd
+  row_group_size: 1000000
+  write_statistics: true
+
+preparation:
+  replacement_policy: atomic_per_file_manifest_last
+  preserve_telemetry_order: true
+  resample: false
+  interpolate: false
+  normalize: false
+  forward_fill: false

@@ -1,0 +1,72 @@
+# Python bytecode and build outputs
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Test, lint, type-check, and coverage caches
+.cache/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+pytest_temp/
+.ruff_cache/
+.mypy_cache/
+.tox/
+.nox/
+
+# Virtual environments and Conda
+.venv*/
+venv/
+env/
+.conda/
+*.conda
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Dataset contents (directory sentinels remain versioned)
+/data/raw/**
+!/data/raw/.gitkeep
+/data/interim/**
+!/data/interim/.gitkeep
+/data/processed/**
+!/data/processed/.gitkeep
+/data/external/**
+!/data/external/.gitkeep
+*.parquet
+*.arrow
+*.feather
+*.ipc
+*.h5
+*.hdf5
+
+# Model checkpoints
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+/checkpoints/
+
+# Experiment artifacts
+/artifacts/data/*.json
+/artifacts/
+/outputs/
+/runs/
+/mlruns/
+/wandb/
+
+# Local tooling caches
+/.uv-cache/
+/.uv-python/

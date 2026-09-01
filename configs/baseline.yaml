@@ -1,0 +1,13 @@
+# Select and configure a baseline only after the dataset structure is confirmed.
+baseline:
+  method: null
+  random_seed: 42
+  parameters: {}
+
+data:
+  input_path: null
+  feature_columns: null
+  label_column: null
+
+output:
+  artifact_dir: null

@@ -1,0 +1,16 @@
+# Experiment-specific choices remain unset until the research protocol is defined.
+experiment:
+  name: null
+  description: null
+  random_seed: 42
+
+configs:
+  data: configs/data.yaml
+  baseline: configs/baseline.yaml
+
+evaluation:
+  split_strategy: null
+  metrics: []
+
+output:
+  directory: null
