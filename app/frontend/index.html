@@ -74,7 +74,7 @@
                   <input type="checkbox" id="filter-rf-checkbox" onchange="toggleRecentRfFilter(this.checked)"> RECENT RF · 24H
                 </label>
               </div>
-              <span class="status-badge live-dot" id="live-stream-badge">REALTIME SGP4 STREAM</span>
+              <span class="status-badge live-dot" id="live-stream-badge">CURRENT SGP4 PROPAGATION · 1 HZ</span>
             </div>
 
             <div class="map-container">
@@ -95,7 +95,7 @@
                 <div class="gc-metric"><span class="gc-lbl">NEXT AOS (UTC)</span><span class="gc-val" id="gc-aos">--:--:--</span></div>
                 <div class="gc-metric"><span class="gc-lbl">NEXT LOS (UTC)</span><span class="gc-val" id="gc-los">--:--:--</span></div>
                 <div class="gc-metric"><span class="gc-lbl">PASS DURATION</span><span class="gc-val" id="gc-dur">-- min</span></div>
-                <div class="gc-metric"><span class="gc-lbl">GROUND STATION</span><span class="gc-val" style="color: var(--color-accent);">ASTRA HYDERABAD HQ</span></div>
+                <div class="gc-metric"><span class="gc-lbl">GROUND STATION</span><span class="gc-val" style="color: var(--color-accent);">ASTRA REFERENCE GROUND STATION (Hyderabad, India)</span></div>
               </div>
             </div>
           </div>
@@ -201,12 +201,19 @@
 
             <!-- SECTION 4: AUTHORIZED MISSION FEED -->
             <div class="inspector-section" id="isec-feed">
-              <div class="panel empty-state-panel" style="padding: 1rem 0.5rem;">
-                <div class="empty-icon">🔒</div>
-                <div class="empty-title" style="font-size: 0.8rem; color: var(--color-warning);">NO AUTHORIZED MISSION TELEMETRY SOURCE CONNECTED</div>
-                <div class="empty-desc" style="font-size: 0.72rem;">This satellite is tracked via public orbital propagation and SatNOGS RF observations.</div>
-                <div class="empty-subtext" style="font-size: 0.68rem; margin-top: 0.5rem;">
-                  Operational health intelligence and real-time telemetry anomaly detection require connecting an authorized mission TelemetryProvider API endpoint.
+              <div class="panel" style="padding: 0.75rem;">
+                <div class="panel-header" style="margin-bottom: 0.5rem; padding-bottom: 0.3rem;">
+                  <span class="panel-title">MISSION TELEMETRY INTEGRATION</span>
+                  <span class="status-badge warning">UNCONFIGURED</span>
+                </div>
+                <div class="kv-grid">
+                  <div class="kv-row"><span class="kv-label">INTEGRATION STATUS</span><span class="kv-val warning">NO AUTHORIZED TELEMETRY FEED</span></div>
+                  <div class="kv-row"><span class="kv-label">PROVIDER PROTOCOL</span><span class="kv-val mono">TelemetryProvider API / gRPC</span></div>
+                  <div class="kv-row"><span class="kv-label">CONNECTED ASSETS</span><span class="kv-val mono">0</span></div>
+                  <div class="kv-row"><span class="kv-label">INTEGRATION READINESS</span><span class="kv-val accent">STANDBY (AWAITING AUTHENTICATION)</span></div>
+                </div>
+                <div class="notice-banner" style="margin-top: 0.6rem; font-size: 0.68rem;">
+                  Public tracking (CelesTrak & SatNOGS) is active for this object. Private health telemetry requires an authorized TelemetryProvider.
                 </div>
               </div>
             </div>
@@ -220,11 +227,36 @@
     <div class="workspace" id="workspace-fleet">
       <div class="grid-12">
         <div class="col-12">
-          <div class="panel empty-state-panel">
-            <div class="empty-icon">📡</div>
-            <div class="empty-title">NO AUTHORIZED FLEET CONNECTED</div>
-            <div class="empty-desc">Connect an authorized mission telemetry source to populate fleet assets.</div>
-            <div class="empty-subtext">The Global Orbital Awareness catalog tracks public Earth-orbiting objects. Private telemetry ingestion requires configuring a validated mission TelemetryProvider API endpoint. Historical research datasets (e.g. ESA Mission-1) are available exclusively in the RESEARCH workspace.</div>
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">AUTHORIZED MISSION FLEET CONFIGURATION</span>
+              <span class="status-badge warning">NO AUTHORIZED FLEET CONNECTED</span>
+            </div>
+            <div class="grid-4-dense" style="margin-bottom: 1rem;">
+              <div class="kpi-card">
+                <div class="kpi-lbl">FLEET STATUS</div>
+                <div class="kpi-val warning">UNCONNECTED</div>
+                <div class="kpi-sub">No operational assets configured</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-lbl">PRIMARY PROVIDER</div>
+                <div class="kpi-val mono">UNCONFIGURED</div>
+                <div class="kpi-sub">TelemetryProvider API endpoint</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-lbl">CONNECTED ASSETS</div>
+                <div class="kpi-val mono">0 Spacecraft</div>
+                <div class="kpi-sub">Public objects in Global workspace</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-lbl">INTEGRATION READINESS</div>
+                <div class="kpi-val accent">READY FOR INGESTION</div>
+                <div class="kpi-sub">Adapter interface validated</div>
+              </div>
+            </div>
+            <div class="notice-banner">
+              Global Orbital Awareness tracks public Earth-orbiting objects via CelesTrak. Private telemetry ingestion requires configuring a validated mission TelemetryProvider API endpoint. Historical research datasets (ESA Mission-1) are available in the RESEARCH & OPERATIONS workspaces.
+            </div>
           </div>
         </div>
       </div>
@@ -234,11 +266,36 @@
     <div class="workspace" id="workspace-spacecraft">
       <div class="grid-12">
         <div class="col-12">
-          <div class="panel empty-state-panel">
-            <div class="empty-icon">🛰️</div>
-            <div class="empty-title">NO AUTHORIZED MISSION TELEMETRY SOURCE CONNECTED</div>
-            <div class="empty-desc">This workspace becomes active when an authorized mission TelemetryProvider is configured.</div>
-            <div class="empty-subtext">To evaluate spacecraft health intelligence on historical telemetry data, switch to the <strong>RESEARCH</strong> or <strong>OPERATIONS</strong> workspaces.</div>
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">OPERATIONAL SPACECRAFT HEALTH CONFIGURATION</span>
+              <span class="status-badge warning">NO MISSION PROVIDER CONFIGURED</span>
+            </div>
+            <div class="grid-4-dense" style="margin-bottom: 1rem;">
+              <div class="kpi-card">
+                <div class="kpi-lbl">TELEMETRY STREAM STATUS</div>
+                <div class="kpi-val warning">NO ACTIVE FEED</div>
+                <div class="kpi-sub">Awaiting mission adapter link</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-lbl">PROVIDER INTERFACE</div>
+                <div class="kpi-val mono">TelemetryProvider</div>
+                <div class="kpi-sub">ASTRA Core Integration Interface</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-lbl">MONITORED PARAMETERS</div>
+                <div class="kpi-val mono">0 Channels</div>
+                <div class="kpi-sub">No active channel bindings</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-lbl">INTEGRATION READINESS</div>
+                <div class="kpi-val accent">STANDBY</div>
+                <div class="kpi-sub">Switch to RESEARCH/OPERATIONS for ESA archive</div>
+              </div>
+            </div>
+            <div class="notice-banner">
+              To evaluate spacecraft health intelligence on historical telemetry data, switch to the <strong>RESEARCH</strong> or <strong>OPERATIONS</strong> workspaces.
+            </div>
           </div>
         </div>
       </div>
@@ -259,7 +316,7 @@
             <table class="ops-table">
               <thead>
                 <tr>
-                  <th>TIMESTAMP (UTC)</th>
+                  <th>ANONYMIZED DATASET TIME / EVENT WINDOW</th>
                   <th>DATA SCOPE</th>
                   <th>SPACECRAFT</th>
                   <th>SEVERITY</th>
@@ -270,7 +327,7 @@
               </thead>
               <tbody id="alerts-table-body">
                 <tr>
-                  <td class="mono">2026-09-01T14:22:00Z</td>
+                  <td class="mono">ANONYMIZED EVENT WINDOW #1 (Nominal)</td>
                   <td class="accent">RESEARCH DATASET</td>
                   <td>ESA Mission-1 Satellite</td>
                   <td><span class="status-badge nominal">NOMINAL</span></td>
@@ -279,13 +336,13 @@
                   <td>Telemetry operating within baseline parameters</td>
                 </tr>
                 <tr>
-                  <td class="mono">2026-09-01T16:05:00Z</td>
+                  <td class="mono">ANONYMIZED EVENT WINDOW #2 (Rare Event)</td>
                   <td class="accent">RESEARCH DATASET</td>
                   <td>ESA Mission-1 Satellite</td>
                   <td><span class="status-badge known">KNOWN PATTERN</span></td>
                   <td class="mono">2.140 / 3.000</td>
                   <td class="mono">CH_41, CH_43</td>
-                  <td>Suppressed via Adaptive Event Memory (Rare Maneuver Match)</td>
+                  <td>Suppressed via Adaptive Event Memory (Rare Event Match)</td>
                 </tr>
               </tbody>
             </table>
@@ -331,8 +388,8 @@
               <span class="strip-label">SELECT EVALUATION TEST WINDOW:</span>
               <div class="scenario-buttons">
                 <button class="scenario-btn active" id="op-sc-normal" onclick="setScenario('normal')">1. NOMINAL TELEMETRY</button>
-                <button class="scenario-btn" id="op-sc-rare_first" onclick="setScenario('rare_first')">2. RARE MANEUVER (1ST OCCURRENCE)</button>
-                <button class="scenario-btn" id="op-sc-rare_repeat" onclick="setScenario('rare_repeat')">3. RARE MANEUVER (REPEAT OCCURRENCE)</button>
+                <button class="scenario-btn" id="op-sc-rare_first" onclick="setScenario('rare_first')">2. RARE EVENT (1ST OCCURRENCE)</button>
+                <button class="scenario-btn" id="op-sc-rare_repeat" onclick="setScenario('rare_repeat')">3. RARE EVENT (REPEAT OCCURRENCE)</button>
                 <button class="scenario-btn" id="op-sc-anomaly" onclick="setScenario('anomaly')">4. GENUINE ANOMALY</button>
               </div>
               <button class="scenario-btn btn-reset" onclick="resetDemoState()">RESET MEMORY BANK</button>
@@ -429,7 +486,7 @@
           <div class="panel">
             <div class="panel-header">
               <span class="panel-title">SYSTEM DATA SOURCES & PROVENANCE MATRIX</span>
-              <span class="status-badge nominal">AUDITED & DEFENSIBLE</span>
+              <span class="status-badge nominal" id="sources-header-status">SOURCE STATUS</span>
             </div>
             <table class="ops-table">
               <thead>
@@ -439,7 +496,7 @@
                   <th>SOURCE TYPE</th>
                   <th>STATUS</th>
                   <th>HTTP STATUS</th>
-                  <th>RETRIEVED / ACCEPTED / REJECTED</th>
+                  <th>RETRIEVED / LOADED / SKIPPED / INVALID</th>
                   <th>CACHE PATH / STATE</th>
                   <th>LAST SUCCESSFUL UPDATE</th>
                   <th>REFRESH LATENCY</th>
@@ -507,8 +564,8 @@
                 </tr>
                 <tr>
                   <td class="mono">Anomaly Safety Audit</td>
-                  <td class="nominal">0 genuine-anomaly detections suppressed by Event Memory</td>
-                  <td>Zero genuine anomalies (0 / 29) were suppressed by Adaptive Event Memory matching.</td>
+                  <td class="nominal">0 / 25 genuine-anomaly detections suppressed by Event Memory</td>
+                  <td>Zero genuine detector anomaly detections (0 / 25) were suppressed by Adaptive Event Memory matching.</td>
                 </tr>
                 <tr>
                   <td class="mono">Dataset Monitored Channels</td>
@@ -525,7 +582,7 @@
                   <td class="accent">scripts/run_memory_experiment.py</td>
                   <td>Fully deterministic execution from frozen Parquet dataset splits.</td>
                 </tr>
-              </tbody>
+                </tbody>
             </table>
           </div>
         </div>

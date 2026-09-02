@@ -251,10 +251,16 @@ async function fetchObjectDetail(noradId) {
       document.getElementById("gc-az").innerText = `${gc.azimuth_deg.toFixed(1)}°`;
       document.getElementById("gc-el").innerText = `${gc.elevation_deg.toFixed(1)}°`;
       document.getElementById("gc-range").innerText = `${gc.range_km.toFixed(1)} km`;
-      document.getElementById("gc-max-el").innerText = gc.max_elevation_deg ? `${gc.max_elevation_deg.toFixed(1)}°` : "--";
-      document.getElementById("gc-aos").innerText = gc.next_aos || "NONE (STATIONARY)";
-      document.getElementById("gc-los").innerText = gc.next_los || "NONE (STATIONARY)";
-      document.getElementById("gc-dur").innerText = gc.pass_duration_minutes ? `${gc.pass_duration_minutes.toFixed(1)} min` : "--";
+      const maxEl = gc.max_elevation_deg || (gc.next_pass && gc.next_pass.max_elevation_deg);
+      document.getElementById("gc-max-el").innerText = maxEl ? `${maxEl.toFixed(1)}°` : "--";
+
+      const aosRaw = gc.next_aos || (gc.next_pass && gc.next_pass.next_aos);
+      const losRaw = gc.next_los || (gc.next_pass && gc.next_pass.next_los);
+      document.getElementById("gc-aos").innerText = aosRaw ? (typeof aosRaw === "string" && aosRaw.includes("T") ? aosRaw.split("T")[1].replace("Z", "").substring(0, 8) : aosRaw) : "UNAVAILABLE";
+      document.getElementById("gc-los").innerText = losRaw ? (typeof losRaw === "string" && losRaw.includes("T") ? losRaw.split("T")[1].replace("Z", "").substring(0, 8) : losRaw) : "UNAVAILABLE";
+
+      const durMinutes = gc.pass_duration_minutes || (gc.next_pass && gc.next_pass.duration_seconds ? gc.next_pass.duration_seconds / 60.0 : null);
+      document.getElementById("gc-dur").innerText = durMinutes ? `${durMinutes.toFixed(1)} min` : "--";
 
       if (badge) {
         if (gc.is_visible) {
@@ -485,13 +491,19 @@ async function fetchDataSourcesStatus() {
     const tbody = document.getElementById("sources-table-body");
     if (!tbody) return;
 
+    const headerBadge = document.getElementById("sources-header-status");
+    if (headerBadge) {
+      headerBadge.innerText = "LIVE MATRIX AUDITED";
+      headerBadge.className = "status-badge nominal";
+    }
+
     tbody.innerHTML = data.sources.map(src => {
       let statusBadgeClass = "nominal";
       if (src.status === "OFFLINE" || src.status === "NOT_CONFIGURED") statusBadgeClass = "warning";
       if (src.status === "HISTORICAL") statusBadgeClass = "known";
 
       const ageStr = typeof src.age_seconds === "number" && src.age_seconds >= 0 ? `${(src.age_seconds / 3600.0).toFixed(1)} hrs` : "N/A";
-      const countsStr = `${src.objects_retrieved} / ${src.objects_accepted} / ${src.objects_rejected}`;
+      const countsStr = `${src.objects_retrieved ?? 0} / ${src.objects_loaded ?? src.objects_accepted ?? 0} / ${src.objects_skipped_by_limit ?? 0} / ${src.objects_invalid ?? src.objects_rejected ?? 0}`;
       const latencyStr = typeof src.refresh_duration_ms === "number" ? `${src.refresh_duration_ms.toFixed(1)} ms` : "0.0 ms";
 
       return `

@@ -36,6 +36,9 @@ class OrbitCatalogProvider:
         self.last_attempt_timestamp: datetime | None = None
         self.last_error: str | None = None
         self.objects_retrieved = 0
+        self.objects_loaded = 0
+        self.objects_skipped_by_limit = 0
+        self.objects_invalid = 0
         self.objects_accepted = 0
         self.objects_rejected = 0
         self.refresh_duration_ms = 0.0
@@ -87,6 +90,9 @@ class OrbitCatalogProvider:
             "http_status": self.last_http_status or ("200 OK" if not self.is_offline else "SOURCE OFFLINE"),
             "catalog_object_count": len(self._objects_by_norad),
             "objects_retrieved": self.objects_retrieved,
+            "objects_loaded": self.objects_loaded,
+            "objects_skipped_by_limit": self.objects_skipped_by_limit,
+            "objects_invalid": self.objects_invalid,
             "objects_accepted": self.objects_accepted,
             "objects_rejected": self.objects_rejected,
             "cache_path": str(self._catalog_cache_file),
@@ -112,8 +118,11 @@ class OrbitCatalogProvider:
                     obj = SpaceObject.model_validate(item)
                     self._objects_by_norad[obj.norad_id] = obj
                 self.objects_retrieved = len(items)
-                self.objects_accepted = len(self._objects_by_norad)
-                self.objects_rejected = self.objects_retrieved - self.objects_accepted
+                self.objects_loaded = len(self._objects_by_norad)
+                self.objects_skipped_by_limit = 0
+                self.objects_invalid = max(0, len(items) - len(self._objects_by_norad))
+                self.objects_accepted = self.objects_loaded
+                self.objects_rejected = self.objects_invalid
                 self.last_http_status = "200 OK (CACHED SNAPSHOT)"
                 self.is_offline = True
             except Exception as e:
@@ -317,8 +326,11 @@ class OrbitCatalogProvider:
                     self.refresh_duration_ms = (time.perf_counter() - start_time) * 1000.0
                     return False
 
-                self.objects_accepted = len(temp_catalog)
-                self.objects_rejected = rejected + max(0, self.objects_retrieved - 500)
+                self.objects_loaded = len(temp_catalog)
+                self.objects_skipped_by_limit = max(0, self.objects_retrieved - 500)
+                self.objects_invalid = rejected
+                self.objects_accepted = self.objects_loaded
+                self.objects_rejected = self.objects_invalid
                 self._objects_by_norad = temp_catalog
                 self.last_successful_refresh = now_utc
                 self.is_offline = False

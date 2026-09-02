@@ -77,6 +77,10 @@ class PassCalculator:
             "azimuth_deg": round(az, 2),
             "is_visible": is_visible,
             "min_elevation_mask_deg": self.min_elevation,
+            "next_aos": pass_info.get("next_aos"),
+            "next_los": pass_info.get("next_los"),
+            "max_elevation_deg": pass_info.get("max_elevation_deg"),
+            "duration_seconds": pass_info.get("duration_seconds"),
             "next_pass": pass_info,
         }
 
