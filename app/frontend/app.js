@@ -82,14 +82,20 @@ function renderSatnogsInspectorData(satnogsData) {
 
   const rfBadge = document.getElementById("satnogs-rf-status");
   const tmBadge = document.getElementById("satnogs-tm-status");
-  const status = satnogsData.overall_status || "SOURCE UNAVAILABLE";
+
+  let statusText = satnogsData.overall_status || "SOURCE UNAVAILABLE";
+  if (satnogsData.source_status === "USING CACHED SATNOGS DATA") {
+    statusText = "USING CACHED SATNOGS DATA";
+  } else if (satnogsData.source_status === "SOURCE UNAVAILABLE") {
+    statusText = "SOURCE UNAVAILABLE";
+  }
 
   if (rfBadge) {
-    rfBadge.innerText = status;
-    rfBadge.className = `status-badge ${status === 'AVAILABLE' ? 'nominal' : (status === 'SOURCE UNAVAILABLE' ? 'warning' : 'known')}`;
+    rfBadge.innerText = statusText;
+    rfBadge.className = `status-badge ${statusText === 'AVAILABLE' ? 'nominal' : (statusText.includes('CACHED') ? 'nominal' : 'warning')}`;
   }
   if (tmBadge) {
-    const tmStatus = satnogsData.has_telemetry_frames ? "AVAILABLE" : (satnogsData.has_decoder ? "NO RECENT DATA" : "NO DECODER");
+    const tmStatus = satnogsData.has_decoder ? "AVAILABLE" : (satnogsData.has_telemetry_frames ? "RAW ONLY" : "NO DECODER");
     tmBadge.innerText = tmStatus;
     tmBadge.className = `status-badge ${tmStatus === 'AVAILABLE' ? 'nominal' : 'warning'}`;
   }
@@ -97,8 +103,8 @@ function renderSatnogsInspectorData(satnogsData) {
   // RF Observations Section
   const latestObs = satnogsData.latest_observation;
   document.getElementById("rf-obs-time").innerText = latestObs ? (latestObs.timestamp || "--") : "NO RECENT DATA";
-  document.getElementById("rf-obs-station").innerText = latestObs ? (latestObs.ground_station_identity || "--") : "--";
-  document.getElementById("rf-obs-freq").innerText = latestObs ? `${latestObs.frequency_hz ? (latestObs.frequency_hz / 1e6).toFixed(3) + ' MHz' : '--'} | ${latestObs.mode || 'RF'}` : "--";
+  document.getElementById("rf-obs-station").innerText = latestObs ? (latestObs.ground_station_identity || latestObs.ground_station_id || "--") : "--";
+  document.getElementById("rf-obs-freq").innerText = latestObs ? `${latestObs.frequency_hz ? (latestObs.frequency_hz / 1e6).toFixed(3) + ' MHz' : '--'} | ${latestObs.mode || '--'}` : "--";
   document.getElementById("rf-obs-id").innerText = latestObs ? `#${latestObs.observation_id}` : "--";
   document.getElementById("rf-obs-count").innerText = (satnogsData.observations || []).length;
 
@@ -106,16 +112,16 @@ function renderSatnogsInspectorData(satnogsData) {
   if (obsContainer) {
     const obsList = satnogsData.observations || [];
     if (obsList.length === 0) {
-      obsContainer.innerHTML = `<div class="notice-banner">No recent RF observations recorded for NORAD ${satnogsData.norad_id} in SatNOGS DB.</div>`;
+      obsContainer.innerHTML = `<div class="notice-banner">No recent RF observations recorded for NORAD ${satnogsData.norad_id} in SatNOGS DB within 24h window.</div>`;
     } else {
       let html = `<table class="decoder-kv-table"><thead><tr><th>PASS ID</th><th>TIMESTAMP</th><th>GROUND STATION NODE</th><th>FREQ / MODE</th><th>STATUS</th></tr></thead><tbody>`;
       obsList.slice(0, 5).forEach(o => {
         html += `<tr>
-          <td class="mono">#${o.observation_id}</td>
+          <td class="mono">#${o.observation_id || '--'}</td>
           <td>${o.timestamp || '--'}</td>
-          <td>${o.ground_station_identity || o.ground_station_id}</td>
-          <td class="mono">${o.frequency_hz ? (o.frequency_hz / 1e6).toFixed(3) + ' MHz' : '--'}</td>
-          <td><span class="status-badge nominal">${o.status}</span></td>
+          <td>${o.ground_station_identity || o.ground_station_id || '--'}</td>
+          <td class="mono">${o.frequency_hz ? (o.frequency_hz / 1e6).toFixed(3) + ' MHz' : '--'} / ${o.mode || '--'}</td>
+          <td><span class="status-badge ${o.status === 'Good' ? 'nominal' : 'known'}">${o.status || 'RECORDED'}</span></td>
         </tr>`;
       });
       html += `</tbody></table>`;
@@ -128,24 +134,35 @@ function renderSatnogsInspectorData(satnogsData) {
   if (tmContainer) {
     const frames = satnogsData.telemetry_frames || [];
     if (frames.length === 0) {
-      tmContainer.innerHTML = `<div class="notice-banner">No public decoded telemetry frames available for NORAD ${satnogsData.norad_id}. Status: ${status}</div>`;
+      tmContainer.innerHTML = `<div class="notice-banner">No public decoded telemetry frames available for NORAD ${satnogsData.norad_id}. Status: ${statusText}</div>`;
     } else {
       let html = "";
       frames.forEach((frame, idx) => {
+        const rawPayload = frame.raw_frame || frame.raw_frame_hex;
+        const decoded = frame.decoded_fields;
+        const hasDecoded = decoded && typeof decoded === 'object' && Object.keys(decoded).length > 0;
+
         html += `<div class="subpanel" style="margin-top: 0.5rem;">
           <div class="panel-header" style="margin-bottom: 0.3rem; padding-bottom: 0.2rem;">
             <span class="panel-title">FRAME #${idx+1} — ${frame.timestamp || 'TIMESTAMP N/A'}</span>
-            <span class="mono" style="font-size: 0.65rem; color: var(--color-accent);">${frame.observer}</span>
-          </div>
-          ${frame.raw_frame_hex ? `<div class="kv-row"><span class="kv-label">RAW HEX FRAME</span><span class="kv-val mono" style="font-size: 0.65rem; word-break: break-all;">${frame.raw_frame_hex}</span></div>` : ''}
-          <div class="section-title" style="margin-top: 0.4rem;">DYNAMIC DECODER FIELDS</div>
-          <table class="decoder-kv-table"><thead><tr><th>FIELD NAME</th><th>DECODER VALUE</th></tr></thead><tbody>`;
+            <span class="mono" style="font-size: 0.65rem; color: var(--color-accent);">${frame.observer ? 'Observer: ' + frame.observer : 'SatNOGS Network'}</span>
+          </div>`;
 
-        const fields = frame.decoded_fields || {};
-        Object.entries(fields).forEach(([k, v]) => {
-          html += `<tr><td class="field-name mono">${k}</td><td class="field-val mono">${v}</td></tr>`;
-        });
-        html += `</tbody></table></div>`;
+        if (rawPayload) {
+          html += `<div class="kv-row"><span class="kv-label">RAW FRAME</span><span class="kv-val mono" style="font-size: 0.65rem; word-break: break-all;">${rawPayload}</span></div>`;
+        }
+
+        if (hasDecoded) {
+          html += `<div class="section-title" style="margin-top: 0.4rem;">DECODER FIELDS</div>
+          <table class="decoder-kv-table"><thead><tr><th>FIELD NAME</th><th>DECODER VALUE</th></tr></thead><tbody>`;
+          Object.entries(decoded).forEach(([k, v]) => {
+            html += `<tr><td class="field-name mono">${k}</td><td class="field-val mono">${v}</td></tr>`;
+          });
+          html += `</tbody></table>`;
+        } else {
+          html += `<div style="margin-top: 0.4rem; font-family: var(--font-mono); font-size: 0.68rem; color: var(--color-warning);">RAW FRAME AVAILABLE &bull; DECODED TELEMETRY UNAVAILABLE</div>`;
+        }
+        html += `</div>`;
       });
       tmContainer.innerHTML = html;
     }

@@ -121,7 +121,7 @@ def test_orbit_satnogs():
     res = client.get("/api/orbit/satnogs/25544")
     assert res.status_code == 200
     data = res.json()
-    assert "status" in data
+    assert "overall_status" in data or "source_status" in data
 
 
 def test_orbit_websocket():

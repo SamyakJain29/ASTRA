@@ -22,8 +22,8 @@ from astra.sources import (
     OrbitPropagationEngine,
     OrbitStateStore,
     PassCalculator,
-    SatNOGSProvider,
     SatnogsObservationProvider,
+    SatNOGSProvider,
     SGP4Propagator,
 )
 
@@ -476,12 +476,8 @@ def get_global_catalog(
     """Global Orbital Catalog query endpoint supporting exact-ranked search and verified filters."""
     objects = catalog_provider.list_objects(query=q, regime=regime, obj_type=object_type, authorized_only=authorized_only)
     if recent_rf_only:
-        filtered = []
-        for obj in objects:
-            avail = satnogs_provider.get_data_availability(obj.norad_id)
-            if avail["has_observations"] or avail["overall_status"] in ["AVAILABLE", "NO DECODER"]:
-                filtered.append(obj)
-        objects = filtered
+        recent_norad_ids = satnogs_provider.get_recent_rf_norad_ids()
+        objects = [obj for obj in objects if obj.norad_id in recent_norad_ids]
 
     summary = catalog_provider.status_summary
     return {
@@ -529,12 +525,11 @@ def get_global_summary():
 def get_global_states(recent_rf_only: bool = False):
     """Compact vectorized propagated state vectors for scalable 2D/3D visualizers."""
     states = orbit_store.get_all_propagated_states()
+    recent_ids = satnogs_provider.get_recent_rf_norad_ids() if recent_rf_only else None
     compact = []
     for st in states:
-        if recent_rf_only:
-            avail = satnogs_provider.get_data_availability(st.norad_id)
-            if not (avail["has_observations"] or avail["overall_status"] in ["AVAILABLE", "NO DECODER"]):
-                continue
+        if recent_ids is not None and st.norad_id not in recent_ids:
+            continue
         compact.append({
             "norad_id": st.norad_id,
             "name": st.name,

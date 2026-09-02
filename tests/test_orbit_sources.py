@@ -70,10 +70,14 @@ def test_ground_station_pass_calculator():
 
 
 def test_satnogs_provider_resilience():
+    from unittest.mock import MagicMock, patch
     satnogs = SatNOGSProvider()
-    res = satnogs.get_satellite_observations(25544)
-    assert "status" in res
-    assert res["status"] in ["DECODED_FRAME_AVAILABLE", "NO RECENT DECODED TELEMETRY"]
+    with patch("httpx.Client.get") as mock_get:
+        mock_get.return_value = MagicMock(status_code=500, request=MagicMock())
+        res = satnogs.get_satellite_observations(25544)
+        assert "overall_status" in res
+        assert res["overall_status"] in ["AVAILABLE", "NO DECODER", "NO RECENT DATA", "SOURCE UNAVAILABLE"]
+        assert "source_status" in res
 
 
 def test_source_separation_safeguards():

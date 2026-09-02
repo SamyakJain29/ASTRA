@@ -1,0 +1,34 @@
+{
+  "code_version": "synthetic-test-version",
+  "generated_files": [
+    {
+      "path": "channels/channel_41.parquet",
+      "row_count": 3
+    },
+    {
+      "path": "channels/channel_46.parquet",
+      "row_count": 2
+    }
+  ],
+  "generation_timestamp": "2026-09-01T00:00:00Z",
+  "manifest_version": 1,
+  "preparation_config": {
+    "numeric_ids": [
+      41,
+      46
+    ],
+    "row_group_size": 2
+  },
+  "selected_channels": [
+    {
+      "channel_identifier": "channel_41",
+      "sample_count": 3
+    },
+    {
+      "channel_identifier": "channel_46",
+      "sample_count": 2
+    }
+  ],
+  "source_archive_md5": null,
+  "source_archive_sha256": "abababababababababababababababababababababababababababababababab"
+}
