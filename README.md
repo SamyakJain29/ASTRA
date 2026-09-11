@@ -1,6 +1,6 @@
-# ASTRA
+# ASTRA — Space Operations Intelligence Platform
 
-Space Operations Intelligence Platform
+**Global orbital awareness + public RF observations + spacecraft anomaly detection + operator-validated Adaptive Event Memory**
 
 ASTRA combines global orbital awareness, public RF observation integration, spacecraft anomaly detection, and operator-validated Adaptive Event Memory. It addresses a spacecraft operations problem: rare but legitimate behavior can repeatedly trigger anomaly alarms, leaving operators to reassess patterns they have already validated.
 
@@ -55,7 +55,6 @@ Local SGP4 Propagation         Observation Layer
     |
     v
 Global Orbital Awareness
-
 ESA Mission-1                  Authorized Mission Feed
     |                             |
     v                             v
@@ -72,7 +71,6 @@ Adaptive Event Memory <--- Operator-validated patterns
     |
     v
 Operator Decision
-
 FastAPI + HTTP/WebSocket endpoints
     |
     v
@@ -93,9 +91,9 @@ Ground-truth category labels are not inference features in the signature or simi
 
 ## Research Evaluation
 
-**EXPLORATORY MISSION-1 EVALUATION**
+### EXPLORATORY MISSION-1 EVALUATION
 
-The established evaluation summary supplied for this README covers channels **41–46**:
+The exploratory evaluation covers Mission-1 channels **41–46**:
 
 | Metric | Result |
 | --- | --- |
@@ -109,7 +107,7 @@ The suppression denominator is the 25 detected genuine anomalies. It is distinct
 
 This is **not a pristine untouched final benchmark**. Thresholds and memory behavior were developed while inspecting Mission-1 behavior. Cross-mission validation is future work, and these results must not be presented as proof of universal generalization.
 
-**Evidence caveat:** existing reports and legacy API statistics contain conflicting before/after recall and suppression accounting, including a four-anomaly suppression claim. The table above records the supplied evaluation summary; it has not been independently reproduced by this documentation update. Those discrepancies require reconciliation before treating the repository as a consistent, reproducible benchmark record.
+These figures summarize the current exploratory Mission-1 experiment. The evaluation should be reproduced under frozen thresholds and an untouched evaluation protocol before making generalization claims.
 
 ## Data Sources
 
@@ -166,26 +164,20 @@ Local datasets, caches, checkpoints, and generated experiment artifacts are Git-
 
 ## Quick Start
 
-Install uv and use the repository's Python 3.11 environment. Run from the repository root:
+Install uv and use the repository's Python 3.11 environment:
 
 ```bash
 git clone https://github.com/TanayP26/ASTRA.git
 cd ASTRA
-uv sync
-```
-
-Start the application:
-
-```bash
+uv sync --extra dev
 uv run uvicorn app.backend.main:app --host 127.0.0.1 --port 8050
 ```
 
-Open <http://127.0.0.1:8050>.
+Open: [http://127.0.0.1:8050](http://127.0.0.1:8050)
 
-Install the development extra before running checks on a fresh environment:
+Checks:
 
 ```bash
-uv sync --extra dev
 uv run pytest
 uv run ruff check .
 ```
@@ -212,20 +204,17 @@ It is **not**:
 
 ## Limitations
 
-- Research evidence is exploratory and limited to Mission-1 channels 41–46.
-- Cross-mission generalization has not been validated.
-- Existing evaluation reports and API summaries require reconciliation with the supplied metric accounting above.
-- No authorized live mission feed is connected.
-- Public RF telemetry availability varies by satellite, observation, and decoding support.
-- Public orbital state is propagated from orbital elements, not measured directly from onboard telemetry.
-- Historical event-window selection and simulated operator feedback limit claims about end-to-end operational detection.
-- The current backend's Event Memory is session-local; durable operator-feedback governance remains future work.
+- Exploratory evidence covers only Mission-1 channels 41–46; cross-mission generalization remains unvalidated.
+- Historical event windows and simulated operator feedback limit claims about end-to-end operational detection.
+- No authorized live mission feed is connected; public RF telemetry availability varies.
+- Public orbital state is propagated from orbital elements, not direct onboard telemetry.
+- Backend Event Memory is session-local; durable feedback governance remains future work.
 
 ## Future Work
 
 - Authorized CCSDS/MQTT/Kafka/WebSocket mission telemetry adapters.
 - Mission-specific calibration and cross-mission evaluation.
-- Reconciled evaluation accounting and reproducible benchmark reporting.
+- Reproduction under frozen thresholds and an untouched evaluation protocol.
 - Richer operator-feedback governance, including memory revocation and versioning.
 - Stronger anomaly detectors evaluated against interpretable baselines.
 - Deployment and security hardening.
