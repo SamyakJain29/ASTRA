@@ -1,124 +1,249 @@
 # ASTRA
 
-ASTRA is a research-first spacecraft health intelligence project. The repository is currently in Phase 1: Research Core, with an emphasis on a small, reproducible Python pipeline rather than an application or service.
+Space Operations Intelligence Platform
 
-The research question is:
+ASTRA combines global orbital awareness, public RF observation integration, spacecraft anomaly detection, and operator-validated Adaptive Event Memory. It addresses a spacecraft operations problem: rare but legitimate behavior can repeatedly trigger anomaly alarms, leaving operators to reassess patterns they have already validated.
 
-> Can operational context and operator-validated event memory reduce false spacecraft anomaly alarms caused by rare nominal events without materially reducing genuine anomaly detection?
+The repository includes a FastAPI backend, an HTML/CSS/JavaScript interface, CelesTrak catalog ingestion with local SGP4 propagation, SatNOGS observation integration, anomaly-detection baselines, and an Event Memory workflow evaluated on historical ESA Mission-1 telemetry. Public orbital data, public RF observations, and historical research telemetry remain separate; no authorized live mission feed is connected.
 
-This is an open research question. The repository does not claim that the hypothesis
-has been proven. Phase 1.2 has prepared research data, but no anomaly-detection model
-has been trained or evaluated and no experimental result is reported.
+Adaptive Event Memory lets operators validate an unusual operational pattern and recognize similar future events using telemetry signatures and operational context. The research question is whether this can reduce repeated rare-nominal alarms without materially reducing genuine-anomaly recall. The current evidence is exploratory and specific to a selected Mission-1 subset.
 
-## Phase 1 scope
+## Problem
 
-Phase 1 is intended to support:
+Anomaly detectors can repeatedly flag rare but legitimate spacecraft behavior. Repeated alarms create alarm fatigue and consume operator attention that could otherwise go to unfamiliar or genuinely anomalous events.
 
-- safe inspection of an explicitly selected ESA telemetry dataset;
-- schema discovery from observed data rather than assumptions;
-- reproducible preprocessing and subset preparation;
-- interpretable anomaly-detection baselines;
-- evaluation of false alarms and genuine anomaly detection; and
-- traceable, configuration-driven experiments.
+Operators need context, supporting evidence, and memory of previously validated operational patterns. ASTRA supports that review; it does not diagnose physical root cause.
 
-The `context`, `memory`, and `explain` packages are placeholders only. Their algorithms are not part of this repository-scaffolding task.
-
-The repository does not download or bundle ESA data. Local raw and generated data are
-Git-ignored. No frontend, backend service, authentication system, microservice,
-large-language-model component, or neural network is included.
-
-## Repository layout
+## Core Idea
 
 ```text
-configs/                 Reproducible research configuration
+Telemetry
+  -> anomaly detector
+  -> event signature
+  -> operational context
+  -> similarity search
+  -> operator validation
+  -> event memory
+  -> known operational pattern recognition
+```
+
+The first occurrence of an unfamiliar event is still surfaced. An operator reviews the evidence and validates whether it represents a legitimate operation. Only validated operational patterns enter the memory used for operational-pattern recognition; future similar events can then be recognized. Unmatched events remain unusual events requiring review, and the operator stays in control.
+
+## What ASTRA Includes
+
+| Workspace / capability | Current scope |
+| --- | --- |
+| **GLOBAL** | CelesTrak public active satellite catalog using GP/OMM orbital elements; local SGP4 propagation for current estimated position, altitude, velocity, and orbit paths; ground-contact/pass context, object search, and source freshness/provenance. |
+| **RF OBSERVATIONS** | SatNOGS Community Ground Network integration in the object inspector: recent RF observations, raw frames, decoded telemetry only when genuinely available, explicit availability states, caching, and source-failure handling. |
+| **FLEET** | Reserved for authorized mission spacecraft; intentionally empty when no authorized feed is connected. |
+| **SPACECRAFT** | Workspace for authorized mission telemetry. Currently shows the disconnected state and does not fabricate spacecraft telemetry. |
+| **ALERTS** | Unusual-event and known-operational-pattern status in the historical research/demo workflow. |
+| **OPERATIONS** | Adaptive Event Memory, event evidence, and operator validation using prepared historical research scenarios. |
+| **DATA SOURCES** | Provider health, source attribution, and cache/freshness state. |
+| **RESEARCH** | ESA Mission-1 exploratory evaluation on selected telemetry channels. |
+
+## Architecture
+
+```text
+CelesTrak                     SatNOGS
+    |                             |
+    v                             v
+GP/OMM Elements                RF Observations / Public Telemetry
+    |                             |
+    v                             v
+Local SGP4 Propagation         Observation Layer
+    |
+    v
+Global Orbital Awareness
+
+ESA Mission-1                  Authorized Mission Feed
+    |                             |
+    v                             v
+Historical Telemetry          Future operational spacecraft
+    |                         telemetry integration
+    v                         (not connected)
+Anomaly Detector
+    |
+    v
+Event Signature + Context
+    |
+    v
+Adaptive Event Memory <--- Operator-validated patterns
+    |
+    v
+Operator Decision
+
+FastAPI + HTTP/WebSocket endpoints
+    |
+    v
+HTML / CSS / JavaScript operator interface
+```
+
+These sources are separate and not interchangeable. Orbital elements support propagated orbital awareness, RF observations describe public reception activity and available payloads, and ESA telemetry supports historical research. None establishes access to an authorized operational mission feed.
+
+## Adaptive Event Memory
+
+Event signatures summarize an event window using duration, affected channels, telemetry statistics, and detector-score features. Telecommand/context features include command timing and nearby command counts; command proximity is contextual evidence, not proof of causation.
+
+Similarity matching combines feature-vector cosine similarity, affected-channel overlap, and command-context proximity. A score-discrepancy guard conservatively rejects some matches when an event is substantially more anomalous than its stored operational counterpart. Thresholds and these safeguards require mission-specific validation; they do not guarantee that every anomaly remains visible.
+
+The SQLite-backed memory queries records validated as `VALID_OPERATION`. Confirmed-anomaly records can be recorded separately but are excluded from operational-pattern matching. The current backend uses an in-memory database, so its operator memory is session-local.
+
+Ground-truth category labels are not inference features in the signature or similarity calculation. The historical experiment does use labelled event windows and labels to simulate operator feedback and evaluate outcomes. This is a retrospective simulation, not a prospective operational trial. Adaptive Event Memory applies established similarity methods within an operator-review workflow.
+
+## Research Evaluation
+
+**EXPLORATORY MISSION-1 EVALUATION**
+
+The established evaluation summary supplied for this README covers channels **41–46**:
+
+| Metric | Result |
+| --- | --- |
+| Genuine anomaly detection | **25 / 29 = 86.2%** |
+| Rare Event alarms before memory | **36** |
+| Rare Event alarms after memory | **5** |
+| Rare Event alarm reduction | **86.1%** |
+| Genuine anomaly detections suppressed by Event Memory | **0 / 25** |
+
+The suppression denominator is the 25 detected genuine anomalies. It is distinct from the 29 labelled genuine anomalies used to report detection recall.
+
+This is **not a pristine untouched final benchmark**. Thresholds and memory behavior were developed while inspecting Mission-1 behavior. Cross-mission validation is future work, and these results must not be presented as proof of universal generalization.
+
+**Evidence caveat:** existing reports and legacy API statistics contain conflicting before/after recall and suppression accounting, including a four-anomaly suppression claim. The table above records the supplied evaluation summary; it has not been independently reproduced by this documentation update. Those discrepancies require reconciliation before treating the repository as a consistent, reproducible benchmark record.
+
+## Data Sources
+
+| Source | Data supplied | Boundary |
+| --- | --- | --- |
+| CelesTrak | Public orbital elements | Not spacecraft telemetry; displayed orbital state is locally propagated. |
+| SatNOGS | Public community RF observations, frames, and available decoded telemetry | Not an authorized mission feed; availability varies by satellite and observation. |
+| ESA Anomaly Detection Benchmark | Historical research telemetry and event annotations | Not live spacecraft telemetry. |
+| Authorized Mission Feed | Future operational telemetry integration | Not connected in the current prototype. |
+
+## Tech Stack
+
+| Layer | Implemented technologies |
+| --- | --- |
+| Runtime and API | Python 3.11, FastAPI, Uvicorn, WebSocket |
+| Telemetry and research | NumPy, Pandas, Polars, PyArrow, DuckDB, scikit-learn, Matplotlib |
+| Orbital propagation | SGP4 |
+| Event memory | SQLite through Python's standard library |
+| Interface | HTML, CSS, JavaScript |
+| Configuration and HTTP | Pydantic, PyYAML, HTTPX |
+| Development | uv, pytest, Ruff |
+
+## Repository Structure
+
+```text
+app/
+  backend/               FastAPI endpoints and application state
+  frontend/              HTML, CSS, and JavaScript interface
+configs/                 Data, baseline, experiment, demo, and orbit settings
 data/
-  raw/                   Immutable source data (not committed)
-  interim/               Intermediate transformations (not committed)
-  processed/             Reproducible final datasets (not committed)
-  external/              Third-party supporting data (not committed)
+  raw/                   Immutable source data (Git-ignored)
+  interim/               Intermediate transformations (Git-ignored)
+  processed/             Reproducible prepared datasets (Git-ignored)
+  external/              External supporting data (Git-ignored)
+  cache/                 Public-source caches (Git-ignored)
 docs/                    Research and engineering documentation
-scripts/                 Command-line entry points
+reports/                 Existing research and engineering reports
+scripts/                 Preparation, evaluation, and analysis entry points
 src/astra/
-  data/                  Dataset inspection, trust validation, and preparation
-  features/              Feature construction
-  models/                Interpretable baselines
-  evaluation/            Evaluation protocols and metrics
-  context/               Reserved context interfaces
-  memory/                Reserved event-memory interfaces
-  explain/               Reserved explanation interfaces
-  utils/                 Shared utilities, including logging
+  context/               Context package boundary
+  data/                  Inspection, preparation, audits, and splits
+  domain/                Space-object and telemetry domain definitions
+  evaluation/            Research metrics
+  explain/               Explanation package boundary
+  features/              Event-signature extraction
+  memory/                Adaptive Event Memory
+  models/                Anomaly-detection baselines
+  sources/               CelesTrak, SatNOGS, propagation, and passes
+  utils/                 Logging and reproducibility helpers
 tests/                   Automated checks
 ```
 
-## Phase 1.2 prepared dataset
+Local datasets, caches, checkpoints, and generated experiment artifacts are Git-ignored. Data-directory placeholder files may be tracked. Existing Markdown reports are repository documentation; they are not a bundled dataset.
 
-The pinned local archive is `ESA-Mission1.zip`, 3,776,246,054 bytes, with SHA-256
-`8c81edb1e81af9084f38a3cc06fa06dbea73b504c99ce1b0fb92bda996b801a7`.
-Authoritative source provenance, release, and licensing remain unresolved.
+## Quick Start
 
-The configuration selects `channel_41` through `channel_46`. Each resolves to literal
-metadata `subsystem_5`, `physical_unit_4`, group 8, and `Target=YES`, and each contains
-15,381,169 samples. Preparation writes:
-
-- six telemetry Parquet files under `data/processed/mission1/channels/`;
-- `data/processed/mission1/events.parquet`, with 3,310 rows for 118 relevant IDs; and
-- `data/processed/mission1/telecommands.parquet`, with 1,594,722 execution records.
-
-The eight Parquet files total 708,766,239 bytes. Event categories remain the ESA
-literals `Anomaly`, `Rare Event`, and `Communication Gap`. Relevant event IDs retain
-their selected- and non-selected-channel label rows for structural context, and
-telecommands remain a separate context table. Neither is interpreted causally.
-
-No resampling, interpolation, normalization, or forward filling is performed. These
-are prepared research assets, not model inputs with a finalized feature policy and
-not evidence of model performance. See [DATASET.md](docs/DATASET.md) for schemas and
-quality facts.
-
-See [RESEARCH_SPEC.md](docs/RESEARCH_SPEC.md) for the scientific question and claims boundary, [ARCHITECTURE.md](docs/ARCHITECTURE.md) for component responsibilities, [DATASET.md](docs/DATASET.md) for data policy, and [EXPERIMENTS.md](docs/EXPERIMENTS.md) for experiment-recording expectations.
-
-## Development setup
-
-ASTRA targets Python 3.11.
+Install uv and use the repository's Python 3.11 environment. Run from the repository root:
 
 ```bash
-python -m venv .venv
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
+git clone https://github.com/TanayP26/ASTRA.git
+cd ASTRA
+uv sync
 ```
 
-Activate the virtual environment using the command appropriate for the local shell before installing dependencies.
-
-Run the repository checks with:
+Start the application:
 
 ```bash
-pytest
-ruff check .
+uv run uvicorn app.backend.main:app --host 127.0.0.1 --port 8050
 ```
 
-Inspect the supported arguments with:
+Open <http://127.0.0.1:8050>.
+
+Install the development extra before running checks on a fresh environment:
 
 ```bash
-python scripts/inspect_dataset.py --help
-python scripts/prepare_subset.py --help
-python scripts/run_baseline.py --help
-python scripts/evaluate.py --help
+uv sync --extra dev
+uv run pytest
+uv run ruff check .
 ```
 
-The dataset inspection and Mission-1 subset preparation CLIs are implemented. From
-the repository root, rebuild the configured subset with:
+Research/demo workflows require separately prepared local data and `artifacts/demo_scenarios.json`; a fresh clone does not include these assets. See [dataset documentation](docs/DATASET.md), [experiment documentation](docs/EXPERIMENTS.md), and the preparation scripts for the existing research workflow.
 
-```bash
-python scripts/prepare_subset.py --config configs/data.yaml
-```
+## Important Data Requirements
 
-Use `--force` to rebuild and replace each generated file atomically, with the manifest
-written last. The baseline and evaluation scripts remain explicit TODO entry points;
-they do not train or score a model.
+- ESA raw and processed research data is not bundled in GitHub because of size, licensing, and data-handling constraints. Obtain it separately under the applicable source terms; a fresh clone does not contain the full ESA dataset.
+- Keep raw inputs immutable under `data/raw/`. Reproducible transformations belong under `data/interim/` and `data/processed/`.
+- CelesTrak and SatNOGS public-source access depends on network and upstream availability.
+- Supported public sources include caching and offline resilience. Cached data may be stale; freshness and failure states must be considered. Without a usable cache or network access, source data may be unavailable.
 
-## Data handling
+## Current Prototype Status
 
-Raw input belongs under `data/raw/` and must remain unchanged. Large datasets, Parquet files, checkpoints, caches, and generated experiment artifacts are excluded from Git. Only placeholder files are tracked in the data directories.
+ASTRA is a research and engineering prototype suitable for SIH evaluation.
 
-The local dataset byte identity and prepared schemas are verified. Authoritative
-licensing, source provenance, several field meanings, label semantics, and split rules
-remain unresolved and must not be invented. See [DATASET.md](docs/DATASET.md).
+It is **not**:
+
+- flight-certified;
+- connected to ISRO mission telemetry;
+- production-proven in spacecraft operations; or
+- an autonomous spacecraft controller.
+
+## Limitations
+
+- Research evidence is exploratory and limited to Mission-1 channels 41–46.
+- Cross-mission generalization has not been validated.
+- Existing evaluation reports and API summaries require reconciliation with the supplied metric accounting above.
+- No authorized live mission feed is connected.
+- Public RF telemetry availability varies by satellite, observation, and decoding support.
+- Public orbital state is propagated from orbital elements, not measured directly from onboard telemetry.
+- Historical event-window selection and simulated operator feedback limit claims about end-to-end operational detection.
+- The current backend's Event Memory is session-local; durable operator-feedback governance remains future work.
+
+## Future Work
+
+- Authorized CCSDS/MQTT/Kafka/WebSocket mission telemetry adapters.
+- Mission-specific calibration and cross-mission evaluation.
+- Reconciled evaluation accounting and reproducible benchmark reporting.
+- Richer operator-feedback governance, including memory revocation and versioning.
+- Stronger anomaly detectors evaluated against interpretable baselines.
+- Deployment and security hardening.
+
+## SIH 2026
+
+Smart India Hackathon 2026
+
+| Field | Detail |
+| --- | --- |
+| Theme | Space Technology |
+| Team | Hercules |
+| Project | ASTRA |
+
+## References
+
+- [ESA Anomaly Detection Benchmark](https://github.com/kplabs-pl/ESA-ADB)
+- [ESA Anomaly Dataset — Zenodo record](https://zenodo.org/records/12528696)
+- [CelesTrak GP orbital elements](https://celestrak.org/NORAD/elements/gp.php)
+- [SatNOGS Community Ground Network](https://network.satnogs.org/)
+- [SGP4 Python package](https://pypi.org/project/sgp4/)
