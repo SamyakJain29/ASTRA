@@ -499,12 +499,12 @@ async function fetchDataSourcesStatus() {
 
     tbody.innerHTML = data.sources.map(src => {
       let statusBadgeClass = "nominal";
-      if (src.status === "OFFLINE" || src.status === "NOT_CONFIGURED") statusBadgeClass = "warning";
+      if (src.status === "OFFLINE" || src.status === "NOT_CONFIGURED" || src.status === "SOURCE UNAVAILABLE" || src.status === "USING CACHED DATA") statusBadgeClass = "warning";
       if (src.status === "HISTORICAL") statusBadgeClass = "known";
 
       const ageStr = typeof src.age_seconds === "number" && src.age_seconds >= 0 ? `${(src.age_seconds / 3600.0).toFixed(1)} hrs` : "N/A";
       const countsStr = `${src.objects_retrieved ?? 0} / ${src.objects_loaded ?? src.objects_accepted ?? 0} / ${src.objects_skipped_by_limit ?? 0} / ${src.objects_invalid ?? src.objects_rejected ?? 0}`;
-      const latencyStr = typeof src.refresh_duration_ms === "number" ? `${src.refresh_duration_ms.toFixed(1)} ms` : "0.0 ms";
+      const latencyStr = typeof src.refresh_duration_ms === "number" ? `${src.refresh_duration_ms.toFixed(1)} ms` : "N/A";
 
       return `
         <tr>
@@ -512,7 +512,7 @@ async function fetchDataSourcesStatus() {
           <td class="accent">${src.data_scope}</td>
           <td class="mono muted">${src.type}</td>
           <td><span class="status-badge ${statusBadgeClass}">${src.status_detail || src.status}</span></td>
-          <td class="mono">${src.http_status || '200 OK'}</td>
+          <td class="mono">${src.http_status || 'N/A'}</td>
           <td class="mono">${countsStr}</td>
           <td class="mono muted">${src.cache_path || 'N/A'}</td>
           <td class="mono">${src.last_success || 'N/A'}</td>

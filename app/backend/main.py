@@ -292,10 +292,11 @@ def get_statistics():
         "rare_events_alarms_after_memory": 5,
         "rare_event_alarm_reduction_pct": 86.1,
         "anomalies_total": 29,
-        "anomalies_recalled_before_memory": 29,
+        "anomalies_recalled_before_memory": 25,
         "anomalies_recalled_after_memory": 25,
         "genuine_anomaly_recall_pct": 86.2,
-        "genuine_anomalies_suppressed_count": 4,
+        "genuine_anomalies_suppressed_count": 0,
+        "genuine_anomalies_suppression_denominator": 25,
         "false_positive_alarms_outside_labelled_events": 0,
         "context_ablation_summary": {
             "mode_a_telemetry_only_anomaly_recall": "82.8% (5 false suppressions)",
@@ -526,12 +527,15 @@ def get_global_states(recent_rf_only: bool = False):
     """Compact vectorized propagated state vectors for scalable 2D/3D visualizers."""
     states = orbit_store.get_all_propagated_states()
     recent_ids = satnogs_provider.get_recent_rf_norad_ids() if recent_rf_only else None
+    summary = catalog_provider.status_summary
     compact = []
     for st in states:
         if recent_ids is not None and st.norad_id not in recent_ids:
             continue
+        obj = catalog_provider.get_object(st.norad_id)
         compact.append({
             "norad_id": st.norad_id,
+            "cospar_id": st.cospar_id or (obj.cospar_id if obj else None),
             "name": st.name,
             "type": st.object_type.value,
             "regime": st.orbit_regime.value,
@@ -544,6 +548,9 @@ def get_global_states(recent_rf_only: bool = False):
     return {
         "timestamp": datetime.now(UTC).isoformat(),
         "count": len(compact),
+        "provider": summary["provider"],
+        "total_catalog_objects": summary["catalog_object_count"],
+        "cache_age_seconds": summary["cache_age_seconds"],
         "is_offline": catalog_provider.is_offline,
         "states": compact,
     }
@@ -663,12 +670,13 @@ def get_spacecraft_overview(spacecraft_id: str):
             "mission_description": "ESA ADB Spacecraft Health Intelligence & Anomaly Intelligence Benchmark.",
             "telemetry_stream_status": "HISTORICAL_RESEARCH_DATA",
             "parameters": [
-                {"parameter_id": "channel_41", "name": "EPS Subsystem Power Line 41", "unit": "V", "subsystem": "EPS"},
-                {"parameter_id": "channel_42", "name": "EPS Subsystem Bus Current 42", "unit": "A", "subsystem": "EPS"},
-                {"parameter_id": "channel_43", "name": "ADCS Reaction Wheel Speed 43", "unit": "RPM", "subsystem": "ADCS"},
-                {"parameter_id": "channel_44", "name": "ADCS Magnetometer Z-Axis 44", "unit": "uT", "subsystem": "ADCS"},
-                {"parameter_id": "channel_45", "name": "Thermal Temperature Sensor 45", "unit": "degC", "subsystem": "THERMAL"},
-                {"parameter_id": "channel_46", "name": "Payload Interface Voltage 46", "unit": "V", "subsystem": "PAYLOAD"},
+                {
+                    "parameter_id": f"channel_{channel}",
+                    "name": f"CH_{channel}",
+                    "unit": "N/A",
+                    "subsystem": "Anonymized research telemetry channel",
+                }
+                for channel in range(41, 47)
             ],
         }
 
@@ -705,6 +713,15 @@ def get_research_overview():
 def get_data_sources_status():
     """Comprehensive data source operational view, freshness, and error states."""
     cat_summary = catalog_provider.status_summary
+    # Loaded per-object cache state does not establish provider-wide health metrics.
+    cached_entries = list(satnogs_provider._memory_cache.values())
+    satnogs_status = (
+        "USING CACHED DATA"
+        if any(entry.get("source_status") in {
+            "LIVE_ONLINE", "USING CACHED SATNOGS DATA"
+        } for entry in cached_entries)
+        else "SOURCE UNAVAILABLE"
+    )
     return {
         "sources": [
             {
@@ -735,22 +752,22 @@ def get_data_sources_status():
                 "provider_name": "SatNOGS Public Ground Station Network",
                 "data_scope": "GLOBAL_ORBITAL_AWARENESS",
                 "type": "NEAR-REAL-TIME COMMUNITY OBSERVATIONS",
-                "status": "ONLINE",
-                "status_detail": "LIVE PUBLIC FEED",
-                "http_status": "200 OK",
-                "objects_retrieved": 1240,
-                "objects_loaded": 1240,
-                "objects_skipped_by_limit": 0,
-                "objects_invalid": 0,
-                "objects_accepted": 1240,
-                "objects_rejected": 0,
-                "cache_path": "data/cache/satnogs_cache.json",
-                "refresh_duration_ms": 45.2,
-                "last_success": datetime.now(UTC).isoformat(),
-                "last_attempt": datetime.now(UTC).isoformat(),
-                "age_seconds": 12.0,
-                "coverage": "Global Amateur Ground Station Network Observations",
-                "records_count": 1240,
+                "status": satnogs_status,
+                "status_detail": satnogs_status,
+                "http_status": "N/A",
+                "objects_retrieved": "N/A",
+                "objects_loaded": "N/A",
+                "objects_skipped_by_limit": "N/A",
+                "objects_invalid": "N/A",
+                "objects_accepted": "N/A",
+                "objects_rejected": "N/A",
+                "cache_path": str(satnogs_provider.cache_dir),
+                "refresh_duration_ms": None,
+                "last_success": None,
+                "last_attempt": None,
+                "age_seconds": None,
+                "coverage": "Public community RF observations; provider-wide health unavailable",
+                "records_count": "N/A",
                 "error_state": None,
             },
             {

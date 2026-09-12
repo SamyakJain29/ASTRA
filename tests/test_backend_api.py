@@ -43,6 +43,14 @@ def test_statistics():
     data = res.json()
     assert data["evaluation_name"] == "Exploratory Mission-1 Evaluation"
     assert data["rare_event_alarm_reduction_pct"] == 86.1
+    assert data["anomalies_total"] == 29
+    assert data["anomalies_recalled_before_memory"] == 25
+    assert data["anomalies_recalled_after_memory"] == 25
+    assert data["genuine_anomaly_recall_pct"] == 86.2
+    assert data["rare_events_alarms_before_memory"] == 36
+    assert data["rare_events_alarms_after_memory"] == 5
+    assert data["genuine_anomalies_suppressed_count"] == 0
+    assert data["genuine_anomalies_suppression_denominator"] == 25
 
 
 def test_demo_scenario_flow_and_feedback():
@@ -151,6 +159,14 @@ def test_v1_global_states_and_fleet():
     data = res.json()
     assert "states" in data
     assert len(data["states"]) >= 4
+    from app.backend.main import catalog_provider
+
+    summary = catalog_provider.status_summary
+    assert data["provider"] == summary["provider"]
+    assert data["total_catalog_objects"] == summary["catalog_object_count"]
+    assert "cache_age_seconds" in data
+    for item in data["states"]:
+        assert item["cospar_id"] == catalog_provider.get_object(item["norad_id"]).cospar_id
 
     res_fleet = client.get("/api/v1/fleet")
     assert res_fleet.status_code == 200
@@ -165,11 +181,32 @@ def test_v1_spacecraft_overview_and_sources_status():
     sc = res.json()
     assert "ESA Mission-1" in sc["name"]
     assert len(sc["parameters"]) == 6
+    assert [p["name"] for p in sc["parameters"]] == [f"CH_{n}" for n in range(41, 47)]
+    assert all(p["unit"] == "N/A" for p in sc["parameters"])
+    assert all("Anonymized" in p["subsystem"] for p in sc["parameters"])
 
     res_src = client.get("/api/v1/sources/status")
     assert res_src.status_code == 200
     srcs = res_src.json()
     assert len(srcs["sources"]) >= 2
 
+
+def test_satnogs_source_status_uses_cache_without_fabricated_metrics(monkeypatch):
+    from app.backend.main import satnogs_provider
+
+    for cache, expected in [
+        ({}, "SOURCE UNAVAILABLE"),
+        ({1: {"source_status": "SOURCE UNAVAILABLE"}}, "SOURCE UNAVAILABLE"),
+        ({1: {"source_status": "LIVE_ONLINE"}}, "USING CACHED DATA"),
+        ({1: {"source_status": "USING CACHED SATNOGS DATA"}}, "USING CACHED DATA"),
+    ]:
+        monkeypatch.setattr(satnogs_provider, "_memory_cache", cache)
+        sources = client.get("/api/v1/sources/status").json()["sources"]
+        source = next(s for s in sources if s["source_id"] == "satnogs_ground_station")
+        assert source["status"] == expected
+        for key in ("http_status", "objects_retrieved", "objects_loaded", "records_count"):
+            assert source[key] == "N/A"
+        for key in ("last_success", "last_attempt", "refresh_duration_ms", "age_seconds"):
+            assert source[key] is None
 
 
