@@ -1,17 +1,17 @@
 <div align="center">
 
-# ASTRA
+<img width="220" alt="ASTRA" src="https://github.com/user-attachments/assets/d82d7cec-a272-4d79-be09-91302ff9afd3" />
 
 ### Space Operations Intelligence Platform
 
 **Global orbital awareness + public RF observations + spacecraft anomaly detection + operator-validated Adaptive Event Memory**
 
 <p>
-  <img src="https://img.shields.io/badge/Phase-Research_Core-Cb4154?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/FastAPI-Backend-009688?style=for-the-badge&logo=fastapi&logoColor=white" />
-  <img src="https://img.shields.io/badge/Parquet-Research_Data-50ABF1?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/SGP4-Orbit_Propagation-6A5ACD?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Phase-Research_Core-Cb4154?style=flat-square" />
+  <img src="https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/FastAPI-Backend-009688?style=flat-square&logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/Parquet-Research_Data-50ABF1?style=flat-square" />
+  <img src="https://img.shields.io/badge/SGP4-Orbit_Propagation-6A5ACD?style=flat-square" />
 </p>
 
 <p>
