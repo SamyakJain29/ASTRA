@@ -419,29 +419,55 @@ function renderGlobalOrbitMap() {
     ctx.stroke();
   }
 
-  // Plot Loaded Catalog Space Objects
+  // Plot non-selected objects first so none can cover the selected label.
   catalogObjects.forEach(st => {
+    if (st.norad_id === selectedNoradId) return;
     const [x, y] = toCanvasCoords(st.lat, st.lon);
-    const isSelected = st.norad_id === selectedNoradId;
 
-    ctx.fillStyle = isSelected ? "#ffab00" : "#00e5ff";
+    ctx.fillStyle = "#00e5ff";
     ctx.beginPath();
-    ctx.arc(x, y, isSelected ? 5 : 3.5, 0, 2 * Math.PI);
+    ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
+    ctx.fill();
+  });
+
+  // Draw the selected marker, crosshair, and label above all catalog dots.
+  const selected = catalogObjects.find(st => st.norad_id === selectedNoradId);
+  if (selected) {
+    const [x, y] = toCanvasCoords(selected.lat, selected.lon);
+    ctx.fillStyle = "#ffab00";
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, 2 * Math.PI);
     ctx.fill();
 
-    if (isSelected) {
-      ctx.strokeStyle = "#ffab00";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x - 8, y); ctx.lineTo(x + 8, y);
-      ctx.moveTo(x, y - 8); ctx.lineTo(x, y + 8);
-      ctx.stroke();
+    ctx.strokeStyle = "#ffab00";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x - 8, y); ctx.lineTo(x + 8, y);
+    ctx.moveTo(x, y - 8); ctx.lineTo(x, y + 8);
+    ctx.stroke();
 
-      ctx.fillStyle = "#e6e8eb";
-      ctx.font = '700 11px "JetBrains Mono"';
-      ctx.fillText(st.name, x + 10, y - 3);
+    if (width <= 8 || height < 16) return;
+    ctx.font = '700 11px "JetBrains Mono"';
+    let label = selected.name;
+    // Shorten names wider than the entire canvas before positioning the label.
+    if (ctx.measureText(label).width > width - 8) {
+      while (label.length > 0 && ctx.measureText(label + "…").width > width - 8) {
+        label = label.slice(0, -1);
+      }
+      label += "…";
     }
-  });
+    const labelWidth = ctx.measureText(label).width;
+    if (labelWidth > width - 8) return;
+    let labelX = x + 12;
+    if (labelX + labelWidth + 4 > width) labelX = x - labelWidth - 16;
+    labelX = Math.max(4, Math.min(width - labelWidth - 4, labelX));
+    const labelY = Math.max(12, Math.min(height - 4, y - 5));
+
+    ctx.fillStyle = "rgba(4, 6, 8, 0.88)";
+    ctx.fillRect(labelX - 4, labelY - 12, labelWidth + 8, 16);
+    ctx.fillStyle = "#e6e8eb";
+    ctx.fillText(label, labelX, labelY);
+  }
 }
 
 // Search with Ranking: Exact NORAD -> Exact COSPAR -> Exact Name -> Partial Name
