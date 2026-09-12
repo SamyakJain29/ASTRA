@@ -42,6 +42,7 @@ The first occurrence of an unfamiliar event is still surfaced. An operator revie
 | **DATA SOURCES** | Provider health, source attribution, and cache/freshness state. |
 | **RESEARCH** | ESA Mission-1 exploratory evaluation on selected telemetry channels. |
 
+
 ## Architecture
 
 ```text
