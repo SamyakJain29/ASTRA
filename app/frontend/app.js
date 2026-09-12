@@ -575,6 +575,23 @@ async function fetchScenarioData(name) {
   }
 }
 
+function normalizeTelemetrySeries(series) {
+  if (!Array.isArray(series)) return [];
+
+  return series
+    .map(point => {
+      if (typeof point === "number") {
+        return Number.isFinite(point) ? point : null;
+      }
+      if (point && typeof point === "object") {
+        const value = Number(point.value);
+        return Number.isFinite(value) ? value : null;
+      }
+      return null;
+    })
+    .filter(value => value !== null);
+}
+
 function renderTelemetryCharts(chartsData) {
   telemetryChartsData = chartsData;
   const channels = [41, 42, 43, 44, 45, 46];
@@ -582,29 +599,31 @@ function renderTelemetryCharts(chartsData) {
   channels.forEach(chNum => {
     const chKey = `channel_${chNum}`;
     const canvas = document.getElementById(`chart-ch${chNum}`);
-    if (!canvas) return;
-
-    const dataPoints = chartsData[chKey] || [];
-    renderEngineeringPlot(canvas, dataPoints);
+    const rawPoints = chartsData[chKey] || [];
+    const values = normalizeTelemetrySeries(rawPoints);
+    renderEngineeringPlot(canvas, values);
 
     const valElem = document.getElementById(`ch${chNum}-val`);
-    if (valElem && dataPoints.length > 0) {
-      const lastVal = dataPoints[dataPoints.length - 1];
-      valElem.innerText = typeof lastVal === "number" ? lastVal.toFixed(3) : lastVal;
+    if (valElem) {
+      valElem.innerText = values.length > 0 ? values[values.length - 1].toFixed(3) : "--";
     }
   });
 }
 
 function renderEngineeringPlot(canvas, data) {
+  if (!canvas || !canvas.parentElement) return;
   const ctx = canvas.getContext("2d");
+  if (!ctx) return;
   const width = canvas.parentElement.clientWidth;
   const height = canvas.parentElement.clientHeight;
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return;
   canvas.width = width;
   canvas.height = height;
 
   ctx.fillStyle = "#11151a";
   ctx.fillRect(0, 0, width, height);
-  if (!data || data.length === 0) return;
+  data = Array.isArray(data) ? data.filter(Number.isFinite) : [];
+  if (data.length === 0) return;
 
   // Grid
   ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
@@ -616,16 +635,26 @@ function renderEngineeringPlot(canvas, data) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
   }
 
-  let min = Math.min(...data);
-  let max = Math.max(...data);
+  let min = data.reduce((a, b) => Math.min(a, b), Infinity);
+  let max = data.reduce((a, b) => Math.max(a, b), -Infinity);
+  // Rescale extreme finite values when their range would overflow.
+  if (!Number.isFinite(max - min)) {
+    const scale = Math.max(Math.abs(min), Math.abs(max));
+    data = data.map(value => value / scale);
+    min /= scale;
+    max /= scale;
+  }
   if (max === min) { max += 1.0; min -= 1.0; }
   const range = max - min;
+  const plotY = value => range > 0 ? height - ((value - min) / range) * height : height / 2;
 
   // Zero Threshold
-  const zeroY = height - ((0 - min) / range) * height;
+  const zeroY = plotY(0);
   ctx.strokeStyle = "rgba(255, 171, 0, 0.3)";
   ctx.setLineDash([4, 4]);
-  ctx.beginPath(); ctx.moveTo(0, zeroY); ctx.lineTo(width, zeroY); ctx.stroke();
+  if (Number.isFinite(zeroY)) {
+    ctx.beginPath(); ctx.moveTo(0, zeroY); ctx.lineTo(width, zeroY); ctx.stroke();
+  }
   ctx.setLineDash([]);
 
   // Telemetry Line
@@ -633,11 +662,16 @@ function renderEngineeringPlot(canvas, data) {
   ctx.lineWidth = 1.5;
   ctx.beginPath();
 
-  const stepX = width / (data.length - 1);
+  const stepX = data.length > 1 ? width / (data.length - 1) : 0;
   data.forEach((val, i) => {
-    const x = i * stepX;
-    const y = height - ((val - min) / range) * height;
+    const x = data.length === 1 ? width / 2 : i * stepX;
+    const y = plotY(val);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    if (data.length === 1) {
+      ctx.fillStyle = "#00e5ff";
+      ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+    }
   });
   ctx.stroke();
 }
