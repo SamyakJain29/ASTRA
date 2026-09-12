@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import json
+import os
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -283,25 +284,30 @@ def get_memory():
 
 @app.get("/api/statistics")
 def get_statistics():
+    # Frozen summaries of the two separately reproduced exploratory studies.
     return {
         "evaluation_name": "Exploratory Mission-1 Evaluation",
-        "description": "Measured performance of baseline vs Adaptive Event Memory on ESA Mission-1 test split",
-        "total_test_events": 65,
-        "rare_events_total": 36,
-        "rare_events_alarms_before_memory": 36,
-        "rare_events_alarms_after_memory": 5,
-        "rare_event_alarm_reduction_pct": 86.1,
-        "anomalies_total": 29,
-        "anomalies_recalled_before_memory": 25,
-        "anomalies_recalled_after_memory": 25,
-        "genuine_anomaly_recall_pct": 86.2,
-        "genuine_anomalies_suppressed_count": 0,
-        "genuine_anomalies_suppression_denominator": 25,
-        "false_positive_alarms_outside_labelled_events": 0,
-        "context_ablation_summary": {
-            "mode_a_telemetry_only_anomaly_recall": "82.8% (5 false suppressions)",
-            "mode_b_telemetry_plus_context_anomaly_recall": "96.6% (1 false suppression)",
-            "context_safety_impact": "+13.8% anomaly recall improvement with telecommand context",
+        "evaluation_caveat": "Not a pristine untouched final benchmark; separate denominators.",
+        "end_to_end": {
+            "labelled_genuine_anomalies": 29,
+            "genuine_anomalies_detected_before_memory": 25,
+            "genuine_anomalies_detected_after_memory": 25,
+            "genuine_anomaly_detection_pct": 86.2,
+            "labelled_rare_event_windows": 36,
+            "rare_event_detector_alarms_before_memory": 5,
+            "rare_event_detector_alarms_after_memory": 4,
+            "rare_event_detector_alarm_reduction_pct": 20.0,
+            "genuine_detector_detections_suppressed_by_memory": 0,
+            "genuine_suppression_denominator": 25,
+            "similarity_threshold": 0.80,
+        },
+        "memory_stage_recurrence": {
+            "evaluation_type": "RETROSPECTIVE LABEL-CONDITIONED MEMORY-STAGE RECURRENCE EVALUATION",
+            "labelled_rare_event_windows": 36,
+            "subsequently_recognized_windows": 27,
+            "review_required_windows": 9,
+            "repeated_review_reduction_pct": 75.0,
+            "similarity_threshold": 0.80,
         },
     }
 
@@ -700,13 +706,61 @@ def get_research_overview():
         "monitored_channels_count": 6,
         "current_scenario": state.current_scenario_name,
         "stored_memory_patterns_count": len(memories),
-        "benchmark_results": {
-            "rare_event_alarms_before_memory": 36,
-            "rare_event_alarms_after_memory": 5,
-            "false_alarm_reduction_pct": 86.1,
-            "genuine_anomaly_recall": "25 / 29 (86.2%)",
-        },
+        **get_statistics(),
     }
+
+
+RESEARCH_DATA_DIR = Path("data/processed/mission1")
+
+
+def research_source_status() -> dict[str, Any]:
+    """Describe local research asset availability without claiming absent data exists."""
+    required_paths = [
+        RESEARCH_DATA_DIR / "events.parquet",
+        RESEARCH_DATA_DIR / "telecommands.parquet",
+        *(RESEARCH_DATA_DIR / "channels" / f"channel_{n}.parquet" for n in range(41, 47)),
+    ]
+    if all(path.exists() for path in required_paths):
+        status = "HISTORICAL RESEARCH ARCHIVE AVAILABLE"
+        source_type = "HISTORICAL RESEARCH DATA"
+        available_path = str(RESEARCH_DATA_DIR)
+    elif DEMO_SCENARIOS_PATH.exists():
+        status = "PREPARED RESEARCH SCENARIOS AVAILABLE"
+        source_type = "HISTORICAL / PREPARED ARTIFACT"
+        available_path = str(DEMO_SCENARIOS_PATH)
+    else:
+        status = "RESEARCH DATA NOT BUNDLED"
+        source_type = "HISTORICAL / NOT BUNDLED"
+        available_path = "N/A"
+    return {
+        "source_id": "esa_mission1_archive",
+        "provider_name": "ESA Mission-1 Anonymized Telemetry Dataset",
+        "data_scope": "RESEARCH_VALIDATION_DATA",
+        "type": source_type,
+        "status": status,
+        "status_detail": status,
+        "http_status": "N/A",
+        "objects_retrieved": "N/A",
+        "objects_loaded": "N/A",
+        "objects_accepted": "N/A",
+        "objects_rejected": "N/A",
+        "objects_skipped_by_limit": "N/A",
+        "objects_invalid": "N/A",
+        "cache_path": available_path,
+        "refresh_duration_ms": None,
+        "last_success": None,
+        "last_attempt": None,
+        "age_seconds": None,
+        "coverage": "Historical anonymized research assets; availability is checked locally",
+        "records_count": "N/A",
+        "error_state": None if available_path != "N/A" else "Research assets are not bundled.",
+    }
+
+
+@app.get("/api/version")
+def get_version():
+    """Return deployment identity when supplied by Railway."""
+    return {"commit": os.getenv("RAILWAY_GIT_COMMIT_SHA") or "local/unknown"}
 
 
 @app.get("/api/v1/sources/status")
@@ -770,26 +824,7 @@ def get_data_sources_status():
                 "records_count": "N/A",
                 "error_state": None,
             },
-            {
-                "source_id": "esa_mission1_archive",
-                "provider_name": "ESA Mission-1 Anonymized Telemetry Dataset",
-                "data_scope": "RESEARCH_VALIDATION_DATA",
-                "type": "HISTORICAL RESEARCH DATA",
-                "status": "HISTORICAL",
-                "status_detail": "HISTORICAL RESEARCH ARCHIVE",
-                "http_status": "200 OK (STATIC DATASET)",
-                "objects_retrieved": 65,
-                "objects_accepted": 65,
-                "objects_rejected": 0,
-                "cache_path": "data/processed/mission1/processed_telemetry.parquet",
-                "refresh_duration_ms": 0.0,
-                "last_success": "N/A (Static Dataset)",
-                "last_attempt": "N/A",
-                "age_seconds": 0.0,
-                "coverage": "6 Monitored Channels, 65 Labelled Test Events",
-                "records_count": 65,
-                "error_state": None,
-            },
+            research_source_status(),
             {
                 "source_id": "production_fleet_telemetry",
                 "provider_name": "Authorized Production Fleet Telemetry Stream",
@@ -815,6 +850,19 @@ def get_data_sources_status():
 
 
 class SafeStaticFiles(StaticFiles):
+    async def get_response(self, path, scope):
+        shell_asset = path in {".", "", "index.html", "app.js", "styles.css"}
+        if shell_asset:
+            # A stale browser validator must not turn a new shell response into a 304.
+            scope = {**scope, "headers": [
+                (name, value) for name, value in scope.get("headers", [])
+                if name.lower() not in {b"if-none-match", b"if-modified-since"}
+            ]}
+        response = await super().get_response(path, scope)
+        if shell_asset:
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+        return response
+
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return

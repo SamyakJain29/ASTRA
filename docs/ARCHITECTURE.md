@@ -27,7 +27,7 @@ flowchart TD
     CH --> DET
     EV --> SIG
     TC --> SIG
-    DET --> SIG
+    DET -->|Only detector alarms in end-to-end evaluation| SIG
     SIG --> AEM
     AEM --> API
     API --> UI
@@ -40,11 +40,11 @@ flowchart TD
 | Package / Directory | Implemented Responsibilities |
 | :--- | :--- |
 | `astra.data` | Dataset inspection, schema validation, PyArrow Parquet loaders, and temporal split partitions. Raw source data is strictly immutable. |
-| `astra.features` | `EventSignatureExtractor`: Generates 10-dimensional statistical telemetry and 9-dimensional telecommand context signatures (`tc_count_5m`, `nearest_tc_diff_sec`). |
+| `astra.features` | `EventSignatureExtractor`: Generates telemetry statistics and telecommand-context signatures (`tc_count_5m`, `nearest_tc_diff_sec`). |
 | `astra.models` | Baseline anomaly detectors (`GlobalStdDetector`, `MultiChannelSpacecraftDetector`, `IsolationForestDetector`). |
-| `astra.memory` | `AdaptiveEventMemory`: SQLite-backed vector similarity store using Cosine Distance math and score-based Anomaly Protection Guard (`cand_score_max > 3.5`). |
-| `astra.evaluation` | Reproducibility protocol, confusion matrix computation, and metric aggregation (Recall, Rare Event False Alarm Reduction Rate). |
-| `app.backend` | FastAPI REST API endpoints serving real-time telemetry, memory state queries, operator feedback validation, and precomputed demo scenarios. |
+| `astra.memory` | `AdaptiveEventMemory`: SQLite-backed vector similarity store using weighted cosine/channel/context similarity and a conditional score-discrepancy guard. |
+| `astra.evaluation` | Reproducibility protocol, confusion matrix computation, and metric aggregation (Recall, end-to-end Rare Event detector-alarm reduction; separate retrospective recurrence summaries). |
+| `app.backend` | FastAPI REST API endpoints serving current propagated orbital states, public RF observations, and historical research scenarios with operator feedback. |
 | `app.frontend` | Glassmorphic Mission Control dashboard using Canvas 2D multi-channel telemetry graphs and 4-stage judge demo controller. |
 
 ---
@@ -57,13 +57,13 @@ flowchart TD
    - `EventSignatureExtractor` aggregates telemetry statistics across channels 41–46 and correlates recent telecommands from `telecommands.parquet`.
 3. **Memory Query & Similarity Matching**:
    - `AdaptiveEventMemory.query()` computes normalized cosine similarity between the current event vector and operator-validated signatures stored in SQLite.
-   - If `best_similarity >= 0.80` AND anomaly score does not trigger the Anomaly Guard (`max_score <= 3.5`), the alarm is classified as `KNOWN_OPERATIONAL_PATTERN` and suppressed.
-   - If anomaly score exceeds 3.5 or no memory matches, the alarm remains active (`UNKNOWN_UNUSUAL_EVENT` or `CRITICAL_COMPONENT_ANOMALY`).
+   - A match at similarity >= 0.80 recognizes a stored operational pattern. A conditional guard rejects a match when `cand_score_max > 3.5` and either `mem_score_max < 2.5` or `cand_score_max > 2.0 * mem_score_max`.
+   - Unknown detector alarms remain visible. The retrospective recurrence script bypasses detector gating by design and evaluates only labelled Rare Event windows; its recognition rate is not detector performance.
 
 ---
 
 ## Reproducibility & Integrity Safeguards
 
-- **Chronological Split**: Strict time-based boundaries (`MISSION1_VALIDATION_BOUNDARY`, `MISSION1_TEST_BOUNDARY`) prevent future data leakage.
-- **Zero Label Leakage**: Memory similarity matching operates strictly on un-labelled telemetry features and telecommand proximity. No ground-truth ESA category/class/subclass fields are used in inference.
-- **Config Locking**: All parameters are frozen in `configs/experiment.yaml` and `configs/demo.yaml`.
+- **Chronological Split**: Time-based boundaries (`MISSION1_VALIDATION_BOUNDARY`, `MISSION1_TEST_BOUNDARY`) separate fitting and test windows; they do not undo threshold development on Mission-1.
+- **Inference Feature Boundary**: Memory similarity matching operates strictly on un-labelled telemetry features and telecommand proximity. Category/class/subclass are not similarity features, but labels define event windows and simulated review.
+- **Reported Settings**: Headline research scripts instantiate detector threshold 3.0 and memory threshold 0.80 directly; generated results report the running values. These exploratory settings were developed while inspecting Mission-1.

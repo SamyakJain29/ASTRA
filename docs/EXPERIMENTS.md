@@ -1,5 +1,11 @@
 # Experiments
 
+## Current Event Memory studies
+
+The headline end-to-end study is `scripts/run_memory_experiment.py`: only actual GlobalStd detector alarms enter memory. The separate `scripts/run_memory_stage_recurrence_experiment.py` admits all labelled Rare Event test windows for retrospective recurrence analysis. See [current results](../README.md#research-evaluation) and the two generated reports. Both use similarity threshold 0.80 and retain the original window slicing/fallback. These exploratory studies inspected Mission-1 during development; they are not an untouched benchmark.
+
+The Phase 1.3 detector-only protocol below is historical baseline documentation. Its omission of Event Memory and Isolation Forest is specific to that suite, not the current repository or either headline study.
+
 ## Phase 1.3 protocol
 
 Phase 1.3 asks whether a reproducible unusual-event detector can be established on

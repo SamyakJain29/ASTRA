@@ -1,5 +1,9 @@
 # ASTRA Telecommand Context Ablation Report
 
+## Separate historical exploratory context-ablation study
+
+These archived measurements are retained from a different label-conditioned comparison and were not rerun during headline reconciliation. They are not the current end-to-end detector result or the separate recurrence study. All labelled windows entered matching without a detector-alarm admission gate; the old recall terminology meant anomaly windows remaining unmatched. No mission-safety guarantee follows.
+
 ## Executive Summary
 
 This report presents a controlled ablation study evaluating the impact of 
@@ -9,12 +13,10 @@ This report presents a controlled ablation study evaluating the impact of
 
 | Metric | Mode A: Telemetry Only | Mode B: Telemetry + Telecommand Context | Impact of Context |
 |---|---|---|---|
-| **Rare Event Alarm Reduction** | 91.7% (33/36) | 75.0% (27/36) | **-16.7%** |
-| **Genuine Anomaly Recall** | 82.8% (24/29) | 96.6% (28/29) | **+13.8%** |
-| **Genuine Anomalies Suppressed** | 5 | 1 | **-4** |
+| **Rare Event cohort recognition** | 91.7% (33/36) | 75.0% (27/36) | **-16.7%** |
+| **Labelled anomaly windows remaining unmatched** | 82.8% (24/29) | 96.6% (28/29) | **+13.8%** |
+| **Labelled anomaly windows matched as operational** | 5 | 1 | **-4** |
 
-## Key Findings
+## Interpretation boundary
 
-1. **Higher Anomaly Recall Safety**: Adding telecommand context improves Genuine Anomaly Recall from 82.8% to 96.6% (+13.8%), reducing false anomaly suppressions from 5 down to 1.
-2. **Context-Aware Discrimination**: Telecommand context provides vital operator state signals that prevent uncommanded anomaly telemetry from falsely matching nominal patterns.
-3. **Balanced Operational Performance**: Telecommand context ensures spacecraft safety by prioritizing genuine anomaly preservation over overly aggressive alarm suppression.
+The recorded telemetry-only and context-enabled modes have different recognition and erroneous-match counts. These are retrospective window decisions, not detector-derived recall or measured operational safety improvements. The current headline studies and their explicit denominators are reported separately in [the end-to-end report](astra_memory_experiment.md) and [the recurrence report](astra_memory_stage_recurrence.md).

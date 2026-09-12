@@ -1,28 +1,25 @@
 # ASTRA Adaptive Event Memory Chronological Experiment Report
 
-## Executive Summary
+## EXPLORATORY MISSION-1 EVALUATION
 
-This report documents the experimental evaluation of ASTRA's **Adaptive Event Memory** 
-under realistic chronological operator feedback on ESA Mission-1 telemetry test events.
+Historical ESA Mission-1 channels 41–46; labelled event windows and simulated operator validation. Only actual GlobalStd detector alarms enter Event Memory.
+An event alarms when any selected channel sample exceeds its detector threshold.
+The existing empty-window neighboring-sample fallback is retained.
 
-### Key Measured Results
-- **Rare Event Alarms BEFORE Memory**: 36
-- **Rare Event Alarms AFTER Memory**: 5
-- **Rare Event Alarms Suppressed**: 31
-- **Rare Event Alarm Reduction**: **86.1%**
-- **Genuine Anomaly Recall BEFORE Memory**: 100.0%
-- **Genuine Anomaly Recall AFTER Memory**: **86.2%**
-- **Genuine Anomalies Incorrectly Suppressed**: **4** (13.8%)
+Detector: GlobalStdDetector; thresholds: {'channel_41': 3.0, 'channel_42': 3.0, 'channel_43': 3.0, 'channel_44': 3.0, 'channel_45': 3.0, 'channel_46': 3.0}.
+Similarity threshold: 0.80.
 
-## Detailed Performance Metrics Table
+| Metric | Measured result |
+| --- | --- |
+| Labelled test events | 65 |
+| Labelled Rare Events | 36 |
+| Genuine anomaly detection before memory | 25 / 29 = 86.2% |
+| Genuine anomaly detection after memory | 25 / 29 = 86.2% |
+| Rare Event alarms before memory | 5 |
+| Rare Event alarms after memory | 4 |
+| Rare Event alarm reduction | 20.0% |
+| Detected genuine anomalies suppressed by memory | 0 / 25 |
 
-| Metric | Before Memory | After Memory | Change / Reduction |
-|---|---|---|---|
-| Rare Event Alarm Rate | 100.0% (36/36) | 13.9% (5/36) | **-86.1%** |
-| Genuine Anomaly Recall | 100.0% (29/29) | 86.2% (25/29) | **0.0% (No Loss)** |
-| False Alarm Burden (Total) | 65 alarms | 34 alarms | **-31 alarms** |
+The detector detected 25 of 29 labelled genuine anomalies. Event Memory retained 25 of those detections and suppressed 0. Rare Event alarm reduction was 20.0% in this run.
 
-## Research Conclusion
-
-The experiment confirms ASTRA's core hypothesis: 
-**Operator-validated event memory significantly reduces false alarms caused by rare nominal events (by 77.8%) without materially reducing genuine anomaly recall (100.0% preserved).**
+This is NOT a pristine untouched final benchmark. Thresholds and memory behavior were developed while inspecting Mission-1. Reproduction under frozen thresholds and an untouched evaluation protocol is required before generalization claims. Cross-mission validation remains future work.

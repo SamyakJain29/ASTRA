@@ -42,15 +42,31 @@ def test_statistics():
     assert res.status_code == 200
     data = res.json()
     assert data["evaluation_name"] == "Exploratory Mission-1 Evaluation"
-    assert data["rare_event_alarm_reduction_pct"] == 86.1
-    assert data["anomalies_total"] == 29
-    assert data["anomalies_recalled_before_memory"] == 25
-    assert data["anomalies_recalled_after_memory"] == 25
-    assert data["genuine_anomaly_recall_pct"] == 86.2
-    assert data["rare_events_alarms_before_memory"] == 36
-    assert data["rare_events_alarms_after_memory"] == 5
-    assert data["genuine_anomalies_suppressed_count"] == 0
-    assert data["genuine_anomalies_suppression_denominator"] == 25
+    end = data["end_to_end"]
+    recurrence = data["memory_stage_recurrence"]
+    assert end["labelled_genuine_anomalies"] == 29
+    assert end["genuine_anomalies_detected_before_memory"] == 25
+    assert end["genuine_anomalies_detected_after_memory"] == 25
+    assert end["genuine_anomaly_detection_pct"] == 86.2
+    assert end["labelled_rare_event_windows"] == 36
+    assert end["rare_event_detector_alarms_before_memory"] == 5
+    assert end["rare_event_detector_alarms_after_memory"] == 4
+    assert end["rare_event_detector_alarm_reduction_pct"] == 20.0
+    assert end["genuine_detector_detections_suppressed_by_memory"] == 0
+    assert end["genuine_suppression_denominator"] == 25
+    assert end["similarity_threshold"] == recurrence["similarity_threshold"] == 0.80
+    assert recurrence["labelled_rare_event_windows"] == 36
+    assert recurrence["subsequently_recognized_windows"] == 27
+    assert recurrence["review_required_windows"] == 9
+    assert recurrence["repeated_review_reduction_pct"] == 75.0
+    assert "RETROSPECTIVE LABEL-CONDITIONED" in recurrence["evaluation_type"]
+    assert not any("alarm" in key for key in recurrence)
+    assert not any("alarm" in key for key in data)
+    overview = client.get("/api/v1/research/overview").json()
+    assert overview["end_to_end"] == end
+    assert overview["memory_stage_recurrence"] == recurrence
+    assert "benchmark_results" not in overview
+
 
 
 def test_demo_scenario_flow_and_feedback():

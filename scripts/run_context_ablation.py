@@ -162,7 +162,9 @@ def main():
     md = []
     md.append("# ASTRA Telecommand Context Ablation Report")
     md.append("")
-    md.append("## Executive Summary")
+    md.append("## Separate exploratory label-conditioned context-ablation study")
+    md.append("All labelled windows enter matching without a detector-alarm admission gate. "
+              "These are not either headline study or end-to-end detector safety metrics.")
     md.append("")
     md.append("This report presents a controlled ablation study evaluating the impact of ")
     md.append("**Telecommand Context Features** on ASTRA's Adaptive Event Memory performance.")
@@ -172,20 +174,20 @@ def main():
     md.append("| Metric | Mode A: Telemetry Only | Mode B: Telemetry + Telecommand Context | Impact of Context |")
     md.append("|---|---|---|---|")
     md.append(
-        f"| **Rare Event Alarm Reduction** | {res_a['rare_event_reduction_pct']:.1f}% ({res_a['rare_events_suppressed']}/{res_a['rare_events_total']}) | {res_b['rare_event_reduction_pct']:.1f}% ({res_b['rare_events_suppressed']}/{res_b['rare_events_total']}) | **{diff_reduction:+.1f}%** |"
+        f"| **Rare Event cohort recognition** | {res_a['rare_event_reduction_pct']:.1f}% ({res_a['rare_events_suppressed']}/{res_a['rare_events_total']}) | {res_b['rare_event_reduction_pct']:.1f}% ({res_b['rare_events_suppressed']}/{res_b['rare_events_total']}) | **{diff_reduction:+.1f}%** |"
     )
     md.append(
-        f"| **Genuine Anomaly Recall** | {res_a['anomaly_recall_pct']:.1f}% ({res_a['anomalies_recalled']}/{res_a['anomalies_total']}) | {res_b['anomaly_recall_pct']:.1f}% ({res_b['anomalies_recalled']}/{res_b['anomalies_total']}) | **{diff_recall:+.1f}%** |"
+        f"| **Labelled anomaly windows remaining unmatched** | {res_a['anomaly_recall_pct']:.1f}% ({res_a['anomalies_recalled']}/{res_a['anomalies_total']}) | {res_b['anomaly_recall_pct']:.1f}% ({res_b['anomalies_recalled']}/{res_b['anomalies_total']}) | **{diff_recall:+.1f}%** |"
     )
     md.append(
-        f"| **Genuine Anomalies Suppressed** | {res_a['anomalies_suppressed']} | {res_b['anomalies_suppressed']} | **{diff_suppressed:+d}** |"
+        f"| **Labelled anomaly windows matched as operational** | {res_a['anomalies_suppressed']} | {res_b['anomalies_suppressed']} | **{diff_suppressed:+d}** |"
     )
     md.append("")
     md.append("## Key Findings")
     md.append("")
-    md.append("1. **Higher Anomaly Recall Safety**: Adding telecommand context improves Genuine Anomaly Recall from 82.8% to 96.6% (+13.8%), reducing false anomaly suppressions from 5 down to 1.")
-    md.append("2. **Context-Aware Discrimination**: Telecommand context provides vital operator state signals that prevent uncommanded anomaly telemetry from falsely matching nominal patterns.")
-    md.append("3. **Balanced Operational Performance**: Telecommand context ensures spacecraft safety by prioritizing genuine anomaly preservation over overly aggressive alarm suppression.")
+    md.append("This retrospective comparison reports window recognition and erroneous matching, "
+              "not operational safety guarantees, physical diagnosis, or detector-derived recall. "
+              "Do not combine these denominators with the headline detector-gated study.")
 
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     REPORT_PATH.write_text("\n".join(md), encoding="utf-8")

@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -14,7 +15,7 @@ from astra.data.splits import (
     event_level_table,
 )
 from astra.evaluation.metrics import timestamp_ns
-from astra.features.event_signature import EventSignatureExtractor
+from astra.features.event_signature import EventSignature, EventSignatureExtractor
 from astra.memory.event_memory import AdaptiveEventMemory
 from astra.models.baselines import (
     GlobalStdDetector,
@@ -27,6 +28,146 @@ TELECOMMANDS_PATH = Path("data/processed/mission1/telecommands.parquet")
 
 REPORT_PATH = Path("reports/astra_memory_experiment.md")
 ARTIFACT_PATH = Path("artifacts/experiments/astra_memory_experiment.json")
+
+
+def detector_alarm_from_scores(
+    scores: dict[str, np.ndarray], detector: MultiChannelSpacecraftDetector
+) -> bool:
+    """Alarm if any channel sample exceeds its fitted detector's threshold."""
+    return any(
+        bool(np.any(values > detector.detectors[channel].threshold))
+        for channel, values in scores.items()
+    )
+
+
+def apply_event_memory(
+    detector_alarm: bool,
+    signature: EventSignature | None,
+    category: str,
+    memory: AdaptiveEventMemory,
+) -> dict[str, Any]:
+    """Query only detector alarms; labels simulate review after the memory decision."""
+    if not detector_alarm:
+        return {
+            "detector_alarm": False,
+            "alarm_after_memory": False,
+            "match_classification": None,
+            "best_similarity": None,
+            "simulation_status": "NO_DETECTOR_ALARM",
+        }
+    if signature is None:
+        raise ValueError("A detector alarm requires an event signature.")
+    match = memory.query(signature)
+    suppressed = match.classification == "KNOWN_OPERATIONAL_PATTERN"
+    if suppressed:
+        status = "SUPPRESSED_AS_KNOWN_PATTERN"
+    elif category == "Rare Event":
+        memory.store_memory(signature, operator_label="VALID_OPERATION")
+        status = "ALARM_TRIGGERED_THEN_LEARNED"
+    else:
+        status = "CONFIRMED_ANOMALY_ALARMED"
+    return {
+        "detector_alarm": True,
+        "alarm_after_memory": not suppressed,
+        "match_classification": match.classification,
+        "best_similarity": match.best_similarity,
+        "simulation_status": status,
+    }
+
+
+def summarize_experiment(
+    log: list[dict[str, Any]],
+    detector: MultiChannelSpacecraftDetector,
+    memory: AdaptiveEventMemory,
+) -> dict[str, Any]:
+    """Compute event-level counts and suppression denominators from pipeline decisions."""
+    rare = [event for event in log if event["category"] == "Rare Event"]
+    anomalies = [event for event in log if event["category"] == "Anomaly"]
+    rare_before = sum(event["detector_alarm"] for event in rare)
+    rare_after = sum(event["alarm_after_memory"] for event in rare)
+    detected_before = sum(event["detector_alarm"] for event in anomalies)
+    detected_after = sum(event["alarm_after_memory"] for event in anomalies)
+    suppressed = detected_before - detected_after
+    return {
+        "experiment_name": "EXPLORATORY MISSION-1 EVALUATION",
+        "detector": "GlobalStdDetector",
+        "detector_thresholds": {
+            channel: fitted.threshold for channel, fitted in detector.detectors.items()
+        },
+        "similarity_threshold": memory.similarity_threshold,
+        "test_event_count": len(log),
+        "rare_event_count": len(rare),
+        "anomaly_event_count": len(anomalies),
+        "rare_event_alarms_before_memory": rare_before,
+        "rare_event_alarms_after_memory": rare_after,
+        "rare_event_alarms_suppressed": rare_before - rare_after,
+        "rare_event_alarm_reduction_percentage": (
+            (rare_before - rare_after) / rare_before * 100 if rare_before else None
+        ),
+        "genuine_anomalies_detected_before_memory": detected_before,
+        "genuine_anomalies_detected_after_memory": detected_after,
+        "genuine_anomaly_recall_before_memory": (
+            detected_before / len(anomalies) if anomalies else None
+        ),
+        "genuine_anomaly_recall_after_memory": (
+            detected_after / len(anomalies) if anomalies else None
+        ),
+        "genuine_anomalies_incorrectly_suppressed": suppressed,
+        "genuine_anomaly_suppression_denominator": detected_before,
+        "false_genuine_anomaly_suppression_rate": (
+            suppressed / detected_before if detected_before else None
+        ),
+        "simulation_log": log,
+    }
+
+
+def render_report(results: dict[str, Any]) -> str:
+    """Render measured results without assumed recall or hardcoded conclusions."""
+    def percentage(value: float | None, scale: float = 100.0) -> str:
+        return "N/A" if value is None else f"{value * scale:.1f}%"
+
+    before = results["genuine_anomalies_detected_before_memory"]
+    after = results["genuine_anomalies_detected_after_memory"]
+    total = results["anomaly_event_count"]
+    suppressed = results["genuine_anomalies_incorrectly_suppressed"]
+    reduction = percentage(results["rare_event_alarm_reduction_percentage"], 1.0)
+    lines = [
+        "# ASTRA Adaptive Event Memory Chronological Experiment Report",
+        "",
+        "## EXPLORATORY MISSION-1 EVALUATION",
+        "",
+        "Historical ESA Mission-1 channels 41–46; labelled event windows and simulated "
+        "operator validation. Only actual GlobalStd detector alarms enter Event Memory.",
+        "An event alarms when any selected channel sample exceeds its detector threshold.",
+        "The existing empty-window neighboring-sample fallback is retained.",
+        "",
+        f"Detector: {results['detector']}; thresholds: {results['detector_thresholds']}.",
+        f"Similarity threshold: {results['similarity_threshold']:.2f}.",
+        "",
+        "| Metric | Measured result |",
+        "| --- | --- |",
+        f"| Labelled test events | {results['test_event_count']} |",
+        f"| Labelled Rare Events | {results['rare_event_count']} |",
+        f"| Genuine anomaly detection before memory | {before} / {total} = "
+        f"{percentage(results['genuine_anomaly_recall_before_memory'])} |",
+        f"| Genuine anomaly detection after memory | {after} / {total} = "
+        f"{percentage(results['genuine_anomaly_recall_after_memory'])} |",
+        f"| Rare Event alarms before memory | {results['rare_event_alarms_before_memory']} |",
+        f"| Rare Event alarms after memory | {results['rare_event_alarms_after_memory']} |",
+        f"| Rare Event alarm reduction | {reduction} |",
+        f"| Detected genuine anomalies suppressed by memory | {suppressed} / {before} |",
+        "",
+        f"The detector detected {before} of {total} labelled genuine anomalies. "
+        f"Event Memory retained {after} of those detections and suppressed {suppressed}. "
+        f"Rare Event alarm reduction was {reduction} in this run.",
+        "",
+        "This is NOT a pristine untouched final benchmark. Thresholds and memory behavior "
+        "were developed while inspecting Mission-1. Reproduction under frozen thresholds "
+        "and an untouched evaluation protocol is required before generalization claims. "
+        "Cross-mission validation remains future work.",
+        "",
+    ]
+    return "\n".join(lines)
 
 def run_experiment() -> dict:
     print("Loading events...")
@@ -77,18 +218,6 @@ def run_experiment() -> dict:
     test_events = events[events["split"] == "test"].copy()
     test_events = test_events[test_events["category"].isin(["Anomaly", "Rare Event"])].reset_index(drop=True)
     
-    # Chronological simulation
-    total_test_events = len(test_events)
-    test_anomalies = test_events[test_events["category"] == "Anomaly"]
-    test_rare_events = test_events[test_events["category"] == "Rare Event"]
-    
-    num_test_anomalies = len(test_anomalies)
-    num_test_rare = len(test_rare_events)
-    
-    # BEFORE memory metrics
-    rare_alarms_before = num_test_rare
-    anomaly_recalled_before = num_test_anomalies  # Baseline flags unusual events
-    
     # Preload channel telemetry dataframes and timestamp arrays once
     print("Preloading channel telemetry data for event window slicing...")
     ch_dfs = {}
@@ -99,18 +228,11 @@ def run_experiment() -> dict:
         ch_dfs[ch] = df_ch["value"].to_numpy()
         ch_ts_ns[ch] = df_ch["ts_ns"].to_numpy()
 
-    # Chronological feedback loop
-    rare_alarms_after = 0
-    rare_alarms_suppressed = 0
-    anomaly_recalled_after = 0
-    anomaly_incorrectly_suppressed = 0
-    
     simulation_log = []
     
     for row in test_events.to_dict("records"):
         event_id = row["event_id"]
         cat = row["category"]
-        cls = row["class"]
         ev_start = pd.Timestamp(row["start_timestamp"])
         ev_end = pd.Timestamp(row["end_timestamp"])
         
@@ -134,114 +256,44 @@ def run_experiment() -> dict:
         # Compute per-channel anomaly scores using fitted detector
         scores = detector.score_channels(ch_vals)
         
-        sig = extractor.extract_signature(
-            event_id=event_id,
-            channel_values=ch_vals,
-            timestamps=ts_arr,
-            anomaly_scores=scores,
-            telecommands_df=tc_df,
-            threshold_score=3.0,
-        )
-        
-        # Query memory
-        match = memory.query(sig)
-        
-        if cat == "Rare Event":
-            if match.classification == "KNOWN_OPERATIONAL_PATTERN":
-                # Successfully recognized & alarm suppressed!
-                rare_alarms_suppressed += 1
-                status = "SUPPRESSED_AS_KNOWN_PATTERN"
-            else:
-                # Unseen or unlearned rare event -> Alarm triggered -> Operator validates
-                rare_alarms_after += 1
-                status = "ALARM_TRIGGERED_THEN_LEARNED"
-                # Store into memory for future occurrences
-                memory.store_memory(sig, operator_label="VALID_OPERATION")
-        else: # Anomaly
-            if match.classification == "KNOWN_OPERATIONAL_PATTERN":
-                # Incorrectly suppressed!
-                anomaly_incorrectly_suppressed += 1
-                status = "INCORRECTLY_SUPPRESSED"
-            else:
-                # Correctly detected as unknown unusual event -> Alarm triggered -> Operator confirms anomaly
-                anomaly_recalled_after += 1
-                status = "CONFIRMED_ANOMALY_ALARMED"
-                # Mark as anomaly in memory (not stored as VALID_OPERATION)
-                
+        detector_alarm = detector_alarm_from_scores(scores, detector)
+        sig = None
+        if detector_alarm:
+            sig = extractor.extract_signature(
+                event_id=event_id,
+                channel_values=ch_vals,
+                timestamps=ts_arr,
+                anomaly_scores=scores,
+                telecommands_df=tc_df,
+                threshold_score=detector.detectors[channels[0]].threshold,
+            )
+        decision = apply_event_memory(detector_alarm, sig, cat, memory)
         simulation_log.append({
             "event_id": event_id,
             "category": cat,
-            "class": cls,
-            "match_classification": match.classification,
-            "best_similarity": match.best_similarity,
-            "simulation_status": status,
+            "class": row["class"],
+            "channel_max_scores": {
+                channel: float(np.max(values)) if len(values) else None
+                for channel, values in scores.items()
+            },
+            **decision,
         })
-        
-    rare_reduction_pct = (rare_alarms_suppressed / rare_alarms_before * 100) if rare_alarms_before else 0.0
-    recall_before = anomaly_recalled_before / num_test_anomalies if num_test_anomalies else 1.0
-    recall_after = anomaly_recalled_after / num_test_anomalies if num_test_anomalies else 1.0
-    false_suppression_rate = anomaly_incorrectly_suppressed / num_test_anomalies if num_test_anomalies else 0.0
-    
-    experiment_results = {
-        "experiment_name": "Chronological Adaptive Event Memory Feedback Experiment",
-        "detector": "GlobalStdDetector (3.0 std)",
-        "similarity_threshold": 0.75,
-        "test_event_count": total_test_events,
-        "rare_event_count": num_test_rare,
-        "anomaly_event_count": num_test_anomalies,
-        "rare_event_alarms_before_memory": rare_alarms_before,
-        "rare_event_alarms_after_memory": rare_alarms_after,
-        "rare_event_alarms_suppressed": rare_alarms_suppressed,
-        "rare_event_alarm_reduction_percentage": rare_reduction_pct,
-        "genuine_anomaly_recall_before_memory": recall_before,
-        "genuine_anomaly_recall_after_memory": recall_after,
-        "genuine_anomalies_incorrectly_suppressed": anomaly_incorrectly_suppressed,
-        "false_genuine_anomaly_suppression_rate": false_suppression_rate,
-        "known_operation_recognition_rate": (rare_alarms_suppressed / (num_test_rare - 8)) if (num_test_rare - 8) > 0 else 1.0,
-    }
-    
+
+    experiment_results = summarize_experiment(simulation_log, detector, memory)
+
     # Save JSON artifact
     ARTIFACT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(ARTIFACT_PATH, "w", encoding="utf-8") as f:
         json.dump(experiment_results, f, indent=2)
     print(f"Artifact written to {ARTIFACT_PATH}")
     
-    # Write Markdown report
-    md = []
-    md.append("# ASTRA Adaptive Event Memory Chronological Experiment Report")
-    md.append("")
-    md.append("## Executive Summary")
-    md.append("")
-    md.append("This report documents the experimental evaluation of ASTRA's **Adaptive Event Memory** ")
-    md.append("under realistic chronological operator feedback on ESA Mission-1 telemetry test events.")
-    md.append("")
-    md.append("### Key Measured Results")
-    md.append(f"- **Rare Event Alarms BEFORE Memory**: {rare_alarms_before}")
-    md.append(f"- **Rare Event Alarms AFTER Memory**: {rare_alarms_after}")
-    md.append(f"- **Rare Event Alarms Suppressed**: {rare_alarms_suppressed}")
-    md.append(f"- **Rare Event Alarm Reduction**: **{rare_reduction_pct:.1f}%**")
-    md.append(f"- **Genuine Anomaly Recall BEFORE Memory**: {recall_before*100:.1f}%")
-    md.append(f"- **Genuine Anomaly Recall AFTER Memory**: **{recall_after*100:.1f}%**")
-    md.append(f"- **Genuine Anomalies Incorrectly Suppressed**: **{anomaly_incorrectly_suppressed}** ({false_suppression_rate*100:.1f}%)")
-    md.append("")
-    md.append("## Detailed Performance Metrics Table")
-    md.append("")
-    md.append("| Metric | Before Memory | After Memory | Change / Reduction |")
-    md.append("|---|---|---|---|")
-    md.append(f"| Rare Event Alarm Rate | 100.0% ({rare_alarms_before}/{num_test_rare}) | {rare_alarms_after/num_test_rare*100:.1f}% ({rare_alarms_after}/{num_test_rare}) | **-{rare_reduction_pct:.1f}%** |")
-    md.append(f"| Genuine Anomaly Recall | {recall_before*100:.1f}% ({anomaly_recalled_before}/{num_test_anomalies}) | {recall_after*100:.1f}% ({anomaly_recalled_after}/{num_test_anomalies}) | **0.0% (No Loss)** |")
-    md.append(f"| False Alarm Burden (Total) | {rare_alarms_before + num_test_anomalies} alarms | {rare_alarms_after + num_test_anomalies} alarms | **-{rare_alarms_suppressed} alarms** |")
-    md.append("")
-    md.append("## Research Conclusion")
-    md.append("")
-    md.append("The experiment confirms ASTRA's core hypothesis: ")
-    md.append("**Operator-validated event memory significantly reduces false alarms caused by rare nominal events (by 77.8%) without materially reducing genuine anomaly recall (100.0% preserved).**")
-    
-    report_text = "\n".join(md)
+    report_text = render_report(experiment_results)
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     REPORT_PATH.write_text(report_text, encoding="utf-8")
     print(f"Report written to {REPORT_PATH}")
     
+    print(json.dumps({key: value for key, value in experiment_results.items()
+                      if key != "simulation_log"}, indent=2))
     return experiment_results
 
 if __name__ == "__main__":

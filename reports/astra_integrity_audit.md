@@ -1,46 +1,43 @@
-# ASTRA Scientific Integrity & Data Leakage Audit
+# ASTRA Research Integrity and Metric Reconciliation
 
-## Executive Summary
+## EXPLORATORY MISSION-1 EVALUATION
 
-This document presents the formal **Scientific Integrity & Data Leakage Audit** for ASTRA's Adaptive Event Memory system. The audit evaluates whether the memory inference, feature extraction, and anomaly protection logic maintain strict separation from ground-truth labels and future temporal data.
+This is a scoped review of the current experiment code and measured reports, not a certification of scientific validity or operational safety.
 
-All audit requirements have been evaluated on the codebase (`src/astra/memory/event_memory.py`, `src/astra/features/event_signature.py`, `scripts/run_memory_experiment.py`).
+| Metric | Result |
+| --- | --- |
+| Genuine anomaly detection before and after memory | 25 / 29 = 86.2% |
+| Rare Event detector alarms before Event Memory | 5 |
+| Rare Event detector alarms after Event Memory | 4 |
+| End-to-end Rare Event detector-alarm reduction | 20.0% |
+| Detected genuine anomalies suppressed by Event Memory | 0 / 25 |
+| Retrospective memory-stage Rare Event recognition | 27 / 36 = 75.0% |
+| Review-required Rare Event windows in recurrence study | 9 / 36 |
 
-**Overall Audit Result: PASS**
+The end-to-end detector study and retrospective, label-conditioned memory-stage recurrence study use different admission rules and denominators. The 75.0% figure is repeated-review reduction within the labelled Rare Event cohort, not detector alarm reduction. Four of 29 labelled genuine anomalies did not trigger the detector; memory suppressed zero of its 25 genuine detections.
 
----
+## Reviewed boundaries
 
-## 1. Compliance Audit Matrix
+| Boundary | Current implementation | Limitation |
+| --- | --- | --- |
+| Detector admission | Only sample scores strictly above each fitted GlobalStd threshold admit end-to-end events to memory. | Uses labelled event windows; not a continuous operational trial. |
+| Recurrence admission | Category selects only Rare Event test windows for a separate chronological simulation. | Label-conditioned cohort cannot establish detector recall or anomaly safety. |
+| Memory features | Telemetry statistics, detector scores, affected-channel overlap, and command-context proximity. | Category/class/subclass are not similarity features, but labels define windows and simulated review. |
+| Learning order | Empty initial memory; query before VALID_OPERATION storage; no future event is preloaded. | Simulated validation is not independent live operator feedback. |
+| Anomaly guard | Candidate score > 3.5 AND (stored score < 2.5 OR candidate > twice stored score) rejects a match. | Conditional safeguard, not unconditional protection above 3.5. |
+| Threshold reporting | Detector 3.0 and memory 0.80 are instantiated in the research scripts and serialized from the running objects. | Do not claim these script settings are loaded from YAML or predeclared before inspecting Mission-1. |
+| Background alarms | Current headline studies enumerate labelled event windows. | They do not establish zero alarms outside labelled intervals. |
 
-| Audit Requirement | Standard | Finding / Verification | Status |
-|---|---|---|---|
-| **No Ground-Truth Feature Leakage** | Event Memory matching must NEVER receive ESA Category, Class, Subclass, or ground-truth anomaly indicators as inference features. | Feature vectors consist exclusively of telemetry summary statistics (mean, std, min, max, magnitude, score) and telecommand context timing/counts. `EventSignature` has no label attributes. | **PASS** |
-| **Chronological Feedback Enforcement** | Future Rare Events cannot enter memory before they occur. | Memory is initialized empty. Events in the test split are evaluated strictly in chronological order by `start_timestamp`. A pattern enters memory only AFTER an operator validates it. | **PASS** |
-| **Telemetry & Permitted Context Only** | Similarity calculations use only telemetry-derived features and permitted telecommand-context features. | Similarity metric combines cosine similarity on normalized feature vectors, Jaccard channel overlap, command time proximity, and 5-min command count proximity. | **PASS** |
-| **Score-Based Anomaly Protection** | Anomaly-protection rules operate only on detector output scores, not ground-truth category. | Guard condition in `compute_similarity()` compares `cand_score_max` vs `mem_score_max` (detector score outputs). It contains zero references to ground-truth category. | **PASS** |
-| **Configuration-Driven Thresholds** | All detector, similarity, and extraction thresholds are configuration-driven. | Detector threshold (3.0 std), similarity threshold (0.80), and window sizes are parameterized in configuration objects (`configs/experiment.yaml`). | **PASS** |
+This is an exploratory Mission-1 evaluation, **not a pristine untouched final benchmark**. Thresholds and memory behavior were developed while inspecting Mission-1. Cross-mission validation remains future work. Reproduction under frozen thresholds and an untouched evaluation protocol is required before generalization claims.
 
----
+Both studies use CH_41–CH_46, anonymized research telemetry channels, and similarity threshold 0.80. Labels define historical event windows and simulate operator review; they are not similarity features. The existing neighboring-sample fallback for empty windows is retained. Repeated-review reduction counts windows relative to reviewing every cohort window; it is not a measurement of operator time saved.
 
-## 2. Quantitative Evaluation Summary
+## Evidence and reproduction
 
-> [!IMPORTANT]
-> **Experiment Status**: The results below reflect the **exploratory Mission-1 test experiment**. This evaluation represents initial model and pipeline validation rather than a pristine untouched holdout benchmark.
+- [End-to-end report](astra_memory_experiment.md), generated by `scripts/run_memory_experiment.py`.
+- [Memory-stage recurrence report](astra_memory_stage_recurrence.md), generated by `scripts/run_memory_stage_recurrence_experiment.py`.
+- Per-event JSON artifacts under Git-ignored `artifacts/experiments/` record actual decisions.
+- `tests/test_memory_experiment.py` tests detector gating, suppression accounting, and threshold reporting.
+- `tests/test_memory_stage_recurrence.py` tests cohort selection, chronological review, and separate denominators.
 
-### Measured Metrics
-
-- **Anomaly Recall BEFORE Memory**: `100.0%` (29 / 29 genuine anomalies detected)
-- **Anomaly Recall AFTER Memory**: `86.2%` (25 / 29 genuine anomalies detected)
-- **Genuine Anomalies Suppressed by Memory**: `4` (13.8% false suppression rate)
-- **Rare Event Alarms BEFORE Memory**: `36` (100.0% false alarm rate on rare nominals)
-- **Rare Event Alarms AFTER Memory**: `5` (13.9% alarm rate)
-- **Rare Event Alarms Suppressed**: `31` (**86.1% reduction**)
-- **False Alarms Outside Labelled Intervals (Before & After)**: `0` (background baseline steady)
-
-*Note on terminology*: We state that genuine anomaly recall changed from 100.0% to 86.2% with 4 suppressed anomalies, rather than claiming recall was "preserved", maintaining strict research precision.
-
----
-
-## 3. Conclusion & Recommendations
-
-The audit confirms that ASTRA's Adaptive Event Memory operates with complete scientific integrity. No ground-truth label leakage exists in the feature representation, vector similarity calculation, or anomaly score guard logic. The pipeline is scientifically defensible and ready for context ablation and backend integration.
+Earlier audit conclusions that assumed every labelled event was a detector alarm are superseded by this review. The [historical context-ablation report](astra_context_ablation.md) remains a separate experiment, not evidence for either current headline configuration.

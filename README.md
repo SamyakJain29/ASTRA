@@ -94,21 +94,36 @@ Ground-truth category labels are not inference features in the signature or simi
 
 ### EXPLORATORY MISSION-1 EVALUATION
 
-The exploratory evaluation covers Mission-1 channels **41–46**:
+On the exploratory ESA Mission-1 subset, the 3σ GlobalStd detector identified 25 of 29 labelled genuine anomaly windows (86.2%). Five of 36 labelled Rare Event windows triggered detector alarms. Adaptive Event Memory reduced those five detector alarms to four while suppressing none of the 25 detected genuine anomalies.
+
+In a separate retrospective, label-conditioned memory-stage recurrence study, 27 of 36 Rare Event windows were subsequently recognized as previously learned operational patterns, reducing repeated operator review by 75.0%.
+
+The end-to-end detector evaluation and the retrospective memory-stage recurrence study are separate evaluations with different denominators.
 
 | Metric | Result |
 | --- | --- |
-| Genuine anomaly detection | **25 / 29 = 86.2%** |
-| Rare Event alarms before memory | **36** |
-| Rare Event alarms after memory | **5** |
-| Rare Event alarm reduction | **86.1%** |
-| Genuine anomaly detections suppressed by Event Memory | **0 / 25** |
+| Genuine anomaly detection before and after memory | 25 / 29 = 86.2% |
+| Rare Event detector alarms before Event Memory | 5 |
+| Rare Event detector alarms after Event Memory | 4 |
+| End-to-end Rare Event detector-alarm reduction | 20.0% |
+| Detected genuine anomalies suppressed by Event Memory | 0 / 25 |
+| Retrospective memory-stage Rare Event recognition | 27 / 36 = 75.0% |
+| Review-required Rare Event windows in recurrence study | 9 / 36 |
 
-The suppression denominator is the 25 detected genuine anomalies. It is distinct from the 29 labelled genuine anomalies used to report detection recall.
+**27/36 is a label-conditioned retrospective memory-stage recurrence measurement. It is not an end-to-end detector alarm count.** The 75.0% value measures repeated-review reduction in that separate study.
 
-This is **not a pristine untouched final benchmark**. Thresholds and memory behavior were developed while inspecting Mission-1 behavior. Cross-mission validation is future work, and these results must not be presented as proof of universal generalization.
+This is an exploratory Mission-1 evaluation, **not a pristine untouched final benchmark**. Thresholds and memory behavior were developed while inspecting Mission-1. Cross-mission validation remains future work. Reproduction under frozen thresholds and an untouched evaluation protocol is required before generalization claims.
 
-These figures summarize the current exploratory Mission-1 experiment. The evaluation should be reproduced under frozen thresholds and an untouched evaluation protocol before making generalization claims.
+Both studies use CH_41–CH_46, anonymized research telemetry channels, and similarity threshold 0.80. Labels define historical event windows and simulate operator review; they are not similarity features. The existing neighboring-sample fallback for empty windows is retained. Repeated-review reduction counts windows relative to reviewing every cohort window; it is not a measurement of operator time saved.
+
+Reproduce the separate studies with prepared local data:
+
+```bash
+uv run python scripts/run_memory_experiment.py
+uv run python scripts/run_memory_stage_recurrence_experiment.py
+```
+
+See the [end-to-end report](reports/astra_memory_experiment.md) and [recurrence report](reports/astra_memory_stage_recurrence.md). The separate [historical context-ablation report](reports/astra_context_ablation.md) is not either headline study.
 
 ## Data Sources
 

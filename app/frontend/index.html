@@ -67,7 +67,7 @@
               <div class="header-left">
                 <span class="panel-title">GLOBAL ORBITAL PICTURE</span>
                 <div class="search-box">
-                  <input type="text" id="global-search-input" placeholder="Search NORAD ID / COSPAR / Object Name..." oninput="onGlobalSearch(this.value)">
+                  <input type="text" id="global-search-input" placeholder="NORAD / COSPAR / NAME" oninput="onGlobalSearch(this.value)">
                   <div class="search-results" id="search-results-dropdown" style="display: none;"></div>
                 </div>
                 <label style="display: flex; align-items: center; gap: 0.35rem; font-family: var(--font-mono); font-size: 0.68rem; color: var(--color-accent); cursor: pointer; user-select: none;">
@@ -128,7 +128,7 @@
 
             <!-- SECTION 1: ORBITAL STATE -->
             <div class="inspector-section active" id="isec-orbital">
-              <div class="section-title">CURRENT REALTIME PROPAGATED STATE (1 Hz SGP4)</div>
+              <div class="section-title">CURRENT PROPAGATED STATE (1 Hz SGP4)</div>
               <div class="telemetry-block">
                 <div class="tel-grid">
                   <div class="tel-box">
@@ -167,7 +167,7 @@
               <div class="kv-grid">
                 <div class="kv-row"><span class="kv-label">SOURCE PROVIDER</span><span class="kv-val" id="sel-prov">CelesTrak GP/OMM Catalog Ingestion Engine</span></div>
                 <div class="kv-row"><span class="kv-label">CACHE DISK STATE</span><span class="kv-val" id="sel-cache-state">--</span></div>
-                <div class="kv-row"><span class="kv-label">TELEMETRY ACCESS</span><span class="kv-val" id="sel-tm-auth">--</span></div>
+                <div class="kv-row"><span class="kv-label">TELEMETRY ACCESS</span><span class="kv-val" id="sel-tm-auth">NO AUTHORIZED MISSION TELEMETRY</span></div>
               </div>
             </div>
 
@@ -175,7 +175,7 @@
             <div class="inspector-section" id="isec-rf">
               <div class="satnogs-citation-banner">
                 <span>SOURCE: SATNOGS COMMUNITY GROUND NETWORK</span>
-                <span class="status-badge" id="satnogs-rf-status">AVAILABLE</span>
+                <span class="status-badge" id="satnogs-rf-status">CHECKING...</span>
               </div>
               <div class="kv-grid">
                 <div class="kv-row"><span class="kv-label">LATEST OBSERVATION TIMESTAMP</span><span class="kv-val" id="rf-obs-time">--</span></div>
@@ -191,7 +191,7 @@
             <div class="inspector-section" id="isec-telemetry">
               <div class="satnogs-citation-banner">
                 <span>SOURCE: SATNOGS COMMUNITY GROUND NETWORK</span>
-                <span class="status-badge" id="satnogs-tm-status">AVAILABLE</span>
+                <span class="status-badge" id="satnogs-tm-status">CHECKING...</span>
               </div>
               <div class="notice-banner" style="margin-bottom: 0.5rem; font-size: 0.68rem;">
                 SatNOGS public telemetry frames preserve raw field names and units. Data is NOT routed into the private ESA anomaly detector.
@@ -213,7 +213,7 @@
                   <div class="kv-row"><span class="kv-label">INTEGRATION READINESS</span><span class="kv-val accent">STANDBY (AWAITING AUTHENTICATION)</span></div>
                 </div>
                 <div class="notice-banner" style="margin-top: 0.6rem; font-size: 0.68rem;">
-                  Public tracking (CelesTrak & SatNOGS) is active for this object. Private health telemetry requires an authorized TelemetryProvider.
+                  Public orbital tracking via CelesTrak is active. SatNOGS RF/telemetry availability is opportunistic and may be unavailable. Private health telemetry requires an authorized TelemetryProvider.
                 </div>
               </div>
             </div>
@@ -307,12 +307,13 @@
         <div class="col-12">
           <div class="panel">
             <div class="panel-header">
-              <span class="panel-title">OPERATIONAL ALERTS LOG</span>
+              <span class="panel-title">HISTORICAL RESEARCH ALERT ARCHIVE</span>
               <span class="status-badge warning">NO LIVE MISSION ALERT SOURCE</span>
             </div>
             <div class="notice-banner">
               Live operational spacecraft alerts require an active mission telemetry provider connection. Below are historical research alerts from ESA Mission-1 evaluation archives.
             </div>
+            <div class="notice-banner">Retrospective research examples, not a live mission feed and not synchronized with the current Operations scenario.</div>
             <table class="ops-table">
               <thead>
                 <tr>
@@ -342,7 +343,7 @@
                   <td><span class="status-badge known">KNOWN PATTERN</span></td>
                   <td class="mono">2.140 / 3.000</td>
                   <td class="mono">CH_41, CH_43</td>
-                  <td>Suppressed via Adaptive Event Memory (Rare Event Match)</td>
+                  <td>Retrospectively recognized after operator-validated memory match (Rare Event Match)</td>
                 </tr>
               </tbody>
             </table>
@@ -395,6 +396,7 @@
               <button class="scenario-btn btn-reset" onclick="resetDemoState()">RESET MEMORY BANK</button>
             </div>
 
+            <div class="notice-banner warning" id="operations-request-status" role="status" aria-live="polite" hidden></div>
             <div class="telemetry-grid" style="margin-top: 1rem;">
               <div class="channel-box">
                 <div class="channel-meta"><span class="channel-id" title="Anonymized research telemetry channel">CH_41</span><span class="channel-score" id="ch41-val">0.42</span></div>
@@ -425,8 +427,8 @@
             <div class="operator-feedback-box">
               <div class="feedback-title">OPERATOR PATTERN VALIDATION FEEDBACK</div>
               <div class="op-action-grid">
-                <button class="op-btn op-btn-valid" onclick="submitFeedback('VALID_OPERATION')">VALID OPERATION (LEARN PATTERN)</button>
-                <button class="op-btn op-btn-anomaly" onclick="submitFeedback('CONFIRMED_ANOMALY')">CONFIRMED ANOMALY</button>
+                <button class="op-btn op-btn-valid" disabled onclick="submitFeedback('VALID_OPERATION')">VALID OPERATION (LEARN PATTERN)</button>
+                <button class="op-btn op-btn-anomaly" disabled onclick="submitFeedback('CONFIRMED_ANOMALY')">CONFIRMED ANOMALY</button>
               </div>
               <div class="feedback-note">Note: Validating an operational event stores its non-ground-truth feature signature into the local Adaptive Event Memory bank. It does not infer physical root cause.</div>
             </div>
@@ -526,28 +528,32 @@
 
             <div class="grid-4-dense" style="margin: 1rem 0;">
               <div class="kpi-card">
-                <div class="kpi-lbl">GENUINE ANOMALY RECALL</div>
-                <div class="kpi-val nominal">25 / 29 (86.2%)</div>
-                <div class="kpi-sub">Genuine anomalies correctly identified</div>
+                <div class="kpi-lbl">GENUINE ANOMALY DETECTION</div>
+                <div class="kpi-val nominal">25 / 29</div>
+                <div class="kpi-sub">86.2% · 3σ GlobalStd baseline detector</div>
               </div>
               <div class="kpi-card">
-                <div class="kpi-lbl">RARE EVENT ALARMS (BEFORE MEMORY)</div>
-                <div class="kpi-val warning">36 Alarms</div>
-                <div class="kpi-sub">3σ per-channel statistical detector baseline</div>
+                <div class="kpi-lbl">RARE EVENT DETECTOR ALARMS</div>
+                <div class="kpi-val warning">5 → 4</div>
+                <div class="kpi-sub">20.0% reduction · End-to-end detector + Adaptive Event Memory</div>
               </div>
               <div class="kpi-card">
-                <div class="kpi-lbl">RARE EVENT ALARMS (AFTER MEMORY)</div>
-                <div class="kpi-val nominal">5 Alarms</div>
-                <div class="kpi-sub">After operator-validated memory match</div>
+                <div class="kpi-lbl">ANOMALY SAFETY</div>
+                <div class="kpi-val nominal">0 / 25</div>
+                <div class="kpi-sub">Detected genuine anomaly alarms suppressed by Event Memory</div>
               </div>
               <div class="kpi-card">
-                <div class="kpi-lbl">RARE EVENT ALARM REDUCTION RATE</div>
-                <div class="kpi-val accent">86.1% Reduction</div>
-                <div class="kpi-sub">Reduction in rare nominal event alarms</div>
+                <div class="kpi-lbl">MEMORY-STAGE RECURRENCE</div>
+                <div class="kpi-val accent">27 / 36</div>
+                <div class="kpi-sub">75.0% · Labelled Rare Event windows subsequently recognized; 9 required review</div>
               </div>
             </div>
+            <div class="notice-banner">
+              End-to-end detector metrics and retrospective memory-stage recurrence metrics are separate exploratory evaluations with different denominators. The 75.0% value measures repeated-review reduction within the labelled Rare Event cohort, not detector alarm reduction or operator time saved.
+              This is an exploratory Mission-1 evaluation, not a pristine untouched final benchmark. Mission-1 informed threshold development; cross-mission validation remains future work.
+            </div>
 
-            <div class="section-title">ABLATION & REPRODUCIBILITY FACTS</div>
+            <div class="section-title">EVALUATION & REPRODUCIBILITY FACTS</div>
             <table class="ops-table">
               <thead>
                 <tr>
@@ -558,12 +564,12 @@
               </thead>
               <tbody>
                 <tr>
-                  <td class="mono">Ground-Truth Leakage Audit</td>
-                  <td class="nominal">PASSED (0 LEAKS)</td>
-                  <td>Verified memory matching never accesses ESA Class, Category, Subclass, or future labels.</td>
+                  <td class="mono">Inference Feature Boundary</td>
+                  <td class="nominal">Telemetry + command context</td>
+                  <td>Category selects the retrospective cohort and simulates review after matching; category/class/subclass are not similarity features. Event windows are label-derived.</td>
                 </tr>
                 <tr>
-                  <td class="mono">Anomaly Safety Audit</td>
+                  <td class="mono">End-to-end Anomaly Safety</td>
                   <td class="nominal">0 / 25 genuine-anomaly detections suppressed by Event Memory</td>
                   <td>Zero genuine detector anomaly detections (0 / 25) were suppressed by Adaptive Event Memory matching.</td>
                 </tr>
@@ -580,7 +586,12 @@
                 <tr>
                   <td class="mono">Experiment Reproducibility Script</td>
                   <td class="accent">scripts/run_memory_experiment.py</td>
-                  <td>Fully deterministic execution from frozen Parquet dataset splits.</td>
+                  <td>End-to-end detector gating; thresholds developed while inspecting Mission-1.</td>
+                </tr>
+                <tr>
+                  <td class="mono">Recurrence Reproducibility Script</td>
+                  <td class="accent">scripts/run_memory_stage_recurrence_experiment.py</td>
+                  <td>Separate label-conditioned study; memory starts empty, query precedes validation. Similarity threshold 0.80 in both studies.</td>
                 </tr>
                 </tbody>
             </table>
@@ -595,7 +606,7 @@
   <footer class="provenance-strip">
     <div class="provenance-item"><span>PRIMARY PROVIDER:</span><span class="provenance-tag" id="prov-provider">CelesTrak GP/OMM Catalog Ingestion Engine</span></div>
     <div class="provenance-item"><span>DATA SCOPE:</span><span class="provenance-tag" id="prov-scope">GLOBAL ORBITAL AWARENESS</span></div>
-    <div class="provenance-item"><span>PROPAGATION ENGINE:</span><span class="provenance-tag" id="prov-engine">SGP4 (WGS72) LOCAL PROPAGATION</span></div>
+    <div class="provenance-item"><span>ENGINE:</span><span class="provenance-tag" id="prov-engine">SGP4 (WGS72) LOCAL PROPAGATION</span></div>
   </footer>
 
   <script src="app.js"></script>

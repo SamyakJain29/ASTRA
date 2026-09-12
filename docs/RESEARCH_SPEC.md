@@ -2,7 +2,7 @@
 
 ## Status
 
-This document defines the Phase 1 research intent. It is not a report of completed experiments and does not establish that the proposed approach works.
+This document retains the original Phase 1 research intent and protocol requirements. Two exploratory Mission-1 studies are now implemented: the detector-gated end-to-end pipeline and a separate label-conditioned memory-stage recurrence study. See [current measured results](../README.md#research-evaluation). Neither establishes universal generalization. The provisional definitions below record the original design scope, not the absence of an implemented prototype.
 
 ## Research question
 
@@ -12,7 +12,7 @@ Can operational context and operator-validated event memory reduce false spacecr
 
 The working hypothesis is that adding validated operational context and a controlled memory of operator-validated nominal events to an anomaly-detection workflow can reduce alarms on rare-but-nominal behavior while preserving detection of genuine anomalies.
 
-This hypothesis is unproven. ASTRA must not claim support for it until a reproducible comparison has been run on an explicitly identified dataset with a documented evaluation protocol.
+Current evidence is limited to exploratory Mission-1 windows: 25/29 genuine detections, 5 → 4 Rare Event detector alarms, and 0/25 detected genuine anomalies suppressed. The separate recurrence study recognized 27/36 windows (75.0%). Confirmatory evaluation under an untouched protocol remains required.
 
 ## Provisional concepts
 
@@ -70,5 +70,5 @@ Whether each risk applies is an empirical question; this list does not assert pr
 
 ## Claims boundary
 
-Until measured evidence exists, ASTRA may describe only the research question, planned methods, engineering behavior, and observed dataset facts. It must not report model quality, alarm reduction, anomaly-detection performance, or operational benefit as established results.
+ASTRA may report the measured exploratory results with their cohort definitions and denominators. It must not equate recurrence recognition with detector alarm reduction, measured operator time saved, physical diagnosis, or operational deployment evidence.
 

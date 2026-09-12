@@ -8,6 +8,47 @@ let selectedObjectDetail = null;
 let orbitWebSocket = null;
 let telemetryChartsData = {};
 
+function formatLatitude(value) {
+  if (value === null || value === undefined || value === "") return "--";
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "--";
+  return `${Math.abs(n).toFixed(4)}° ${n >= 0 ? "N" : "S"}`;
+}
+
+function formatLongitude(value) {
+  if (value === null || value === undefined || value === "") return "--";
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "--";
+  return `${Math.abs(n).toFixed(4)}° ${n >= 0 ? "E" : "W"}`;
+}
+
+function formatFreshness(seconds) {
+  if (seconds === null || seconds === undefined) return "N/A";
+  const age = Number(seconds);
+  if (!Number.isFinite(age) || age < 0) return "N/A";
+  if (age < 60) return "< 1 min";
+  if (age < 3600) return `${Math.floor(age / 60)} min`;
+  return `${(age / 3600).toFixed(1)} hrs`;
+}
+
+function updateWorkspaceProvenance(nav) {
+  const provenance = {
+    global: ["CelesTrak GP/OMM Catalog Ingestion Engine", "GLOBAL ORBITAL AWARENESS", "SGP4 (WGS72) LOCAL PROPAGATION"],
+    fleet: ["AUTHORIZED TELEMETRY PROVIDER", "AUTHORIZED FLEET OPERATIONS", "NOT CONNECTED"],
+    spacecraft: ["AUTHORIZED TELEMETRY PROVIDER", "AUTHORIZED MISSION TELEMETRY", "NOT CONNECTED"],
+    alerts: ["NO LIVE MISSION ALERT SOURCE", "HISTORICAL RESEARCH ALERT ARCHIVE", "ADAPTIVE EVENT MEMORY / RESEARCH"],
+    operations: ["ESA MISSION-1 HISTORICAL ARCHIVE", "RESEARCH EVENT EVALUATION", "ADAPTIVE EVENT MEMORY"],
+    sources: ["MULTIPLE / PROVENANCE MATRIX", "SOURCE STATUS & ATTRIBUTION", "N/A"],
+    research: ["ESA MISSION-1 HISTORICAL ARCHIVE", "EXPLORATORY RESEARCH VALIDATION", "ASTRA EVALUATION PIPELINE"]
+  };
+  const values = provenance[nav];
+  if (!values) return;
+  ["prov-provider", "prov-scope", "prov-engine"].forEach((id, i) => {
+    const element = document.getElementById(id);
+    if (element) element.innerText = values[i];
+  });
+}
+
 // Continents for 2D equirectangular map background
 const CONTINENT_POLYGONS = [
   [[-130, 50], [-120, 60], [-80, 60], [-60, 45], [-80, 25], [-105, 20], [-120, 35], [-130, 50]],
@@ -21,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
   startSystemClock();
   initGlobalCatalog();
   fetchDataSourcesStatus();
-  fetchScenarioData("normal");
+  fetchScenarioData();
 
   // Periodic catalog & data source refresh
   setInterval(refreshGlobalCatalogStates, 2000);
@@ -36,6 +77,7 @@ function startSystemClock() {
 // 7-Workspace Navigation Switcher
 function switchNav(nav) {
   activeNav = nav;
+  updateWorkspaceProvenance(nav);
   document.querySelectorAll(".workspace").forEach(w => w.classList.remove("active"));
   document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
 
@@ -84,18 +126,20 @@ function renderSatnogsInspectorData(satnogsData) {
   const tmBadge = document.getElementById("satnogs-tm-status");
 
   let statusText = satnogsData.overall_status || "SOURCE UNAVAILABLE";
-  if (satnogsData.source_status === "USING CACHED SATNOGS DATA") {
-    statusText = "USING CACHED SATNOGS DATA";
+  if (satnogsData.source_status === "USING CACHED SATNOGS DATA" || satnogsData.is_cached) {
+    statusText = "USING CACHED DATA";
   } else if (satnogsData.source_status === "SOURCE UNAVAILABLE") {
     statusText = "SOURCE UNAVAILABLE";
   }
 
   if (rfBadge) {
     rfBadge.innerText = statusText;
-    rfBadge.className = `status-badge ${statusText === 'AVAILABLE' ? 'nominal' : (statusText.includes('CACHED') ? 'nominal' : 'warning')}`;
+    rfBadge.className = `status-badge ${statusText === 'AVAILABLE' ? 'nominal' : 'warning'}`;
   }
   if (tmBadge) {
-    const tmStatus = satnogsData.has_decoder ? "AVAILABLE" : (satnogsData.has_telemetry_frames ? "RAW ONLY" : "NO DECODER");
+    const tmStatus = ["SOURCE UNAVAILABLE", "USING CACHED DATA"].includes(statusText)
+      ? statusText
+      : (satnogsData.has_decoder ? "AVAILABLE" : (satnogsData.has_telemetry_frames ? "RAW ONLY" : "NO DECODER"));
     tmBadge.innerText = tmStatus;
     tmBadge.className = `status-badge ${tmStatus === 'AVAILABLE' ? 'nominal' : 'warning'}`;
   }
@@ -184,7 +228,7 @@ async function refreshGlobalCatalogStates() {
 
     if (provElem) provElem.innerText = data.provider || "CelesTrak GP/OMM Catalog Engine";
     if (countElem) countElem.innerText = `${data.total_catalog_objects || catalogObjects.length} Objects`;
-    if (ageElem) ageElem.innerText = `${(data.cache_age_seconds / 3600.0 || 0).toFixed(1)} hrs`;
+    if (ageElem) ageElem.innerText = formatFreshness(data.cache_age_seconds);
 
     if (cacheStateElem) {
       if (data.is_offline) {
@@ -212,7 +256,7 @@ function selectObject(noradId) {
 async function fetchObjectDetail(noradId) {
   try {
     const res = await fetch(`/api/v1/global/object/${noradId}`);
-    if (!res.ok) return;
+    if (!res.ok) throw new Error(`Object detail HTTP ${res.status}`);
     const detail = await res.json();
     selectedObjectDetail = detail;
 
@@ -223,11 +267,13 @@ async function fetchObjectDetail(noradId) {
     document.getElementById("sel-obj-type").innerText = detail.object_type || "ACTIVE_SPACECRAFT";
     document.getElementById("sel-orbit-regime").innerText = detail.orbit_regime || "LEO";
 
+    document.getElementById("sel-tm-auth").innerText = "NO AUTHORIZED MISSION TELEMETRY";
+
     const der = detail.derived_propagated_values || {};
     const src = detail.source_values || {};
 
-    document.getElementById("sel-lat").innerText = der.latitude !== null ? `${der.latitude.toFixed(4)}° N` : "--";
-    document.getElementById("sel-lon").innerText = der.longitude !== null ? `${der.longitude.toFixed(4)}° E` : "--";
+    document.getElementById("sel-lat").innerText = formatLatitude(der.latitude);
+    document.getElementById("sel-lon").innerText = formatLongitude(der.longitude);
     document.getElementById("sel-alt").innerText = der.altitude_km !== null ? `${der.altitude_km.toFixed(2)} km` : "--";
     document.getElementById("sel-vel").innerText = der.velocity_kms !== null ? `${der.velocity_kms.toFixed(3)} km/s` : "--";
     document.getElementById("sel-state-time").innerText = der.propagated_timestamp || new Date().toISOString();
@@ -239,7 +285,7 @@ async function fetchObjectDetail(noradId) {
     document.getElementById("sel-ap-per").innerText = (der.apogee_km && der.perigee_km) ? `${der.apogee_km.toFixed(1)} / ${der.perigee_km.toFixed(1)} km` : "--";
     document.getElementById("sel-period").innerText = der.period_minutes ? `${der.period_minutes.toFixed(2)} min` : "--";
     document.getElementById("sel-epoch").innerText = src.element_epoch || "--";
-    document.getElementById("sel-age").innerText = der.element_age_hours ? `${der.element_age_hours.toFixed(1)} hrs` : "--";
+    document.getElementById("sel-age").innerText = formatFreshness(der.element_age_hours == null ? null : der.element_age_hours * 3600);
 
     document.getElementById("sel-prov").innerText = src.provider || "CelesTrak OMM/GP Ingestion Engine";
     document.getElementById("sel-cache-state").innerText = detail.network_and_cache_state ? detail.network_and_cache_state.status : "USING CACHED ORBITAL ELEMENTS";
@@ -279,6 +325,7 @@ async function fetchObjectDetail(noradId) {
 
     renderGlobalOrbitMap();
   } catch (err) {
+    renderSatnogsInspectorData({source_status: "SOURCE UNAVAILABLE"});
     console.error("Error fetching object detail:", err);
   }
 }
@@ -301,8 +348,8 @@ function connectOrbitWebSocket(noradId) {
       if (data.norad_id !== selectedNoradId) return;
 
       // Update 1 Hz changing telemetry values
-      document.getElementById("sel-lat").innerText = `${data.latitude.toFixed(4)}° N`;
-      document.getElementById("sel-lon").innerText = `${data.longitude.toFixed(4)}° E`;
+      document.getElementById("sel-lat").innerText = formatLatitude(data.latitude);
+      document.getElementById("sel-lon").innerText = formatLongitude(data.longitude);
       document.getElementById("sel-alt").innerText = `${data.altitude_km.toFixed(2)} km`;
       document.getElementById("sel-vel").innerText = `${data.velocity_km_s.toFixed(3)} km/s`;
       document.getElementById("sel-state-time").innerText = data.timestamp;
@@ -519,17 +566,16 @@ async function fetchDataSourcesStatus() {
 
     const headerBadge = document.getElementById("sources-header-status");
     if (headerBadge) {
-      headerBadge.innerText = "LIVE MATRIX AUDITED";
+      headerBadge.innerText = "SOURCE STATUS REFRESHED";
       headerBadge.className = "status-badge nominal";
     }
 
     tbody.innerHTML = data.sources.map(src => {
       let statusBadgeClass = "nominal";
-      if (src.status === "OFFLINE" || src.status === "NOT_CONFIGURED" || src.status === "SOURCE UNAVAILABLE" || src.status === "USING CACHED DATA") statusBadgeClass = "warning";
-      if (src.status === "HISTORICAL") statusBadgeClass = "known";
+      if (src.status === "OFFLINE" || src.status === "NOT_CONFIGURED" || src.status === "SOURCE UNAVAILABLE" || src.status === "USING CACHED DATA" || src.status === "RESEARCH DATA NOT BUNDLED") statusBadgeClass = "warning";
+      if (src.status.includes("RESEARCH") && src.status.includes("AVAILABLE")) statusBadgeClass = "known";
 
-      const ageStr = typeof src.age_seconds === "number" && src.age_seconds >= 0 ? `${(src.age_seconds / 3600.0).toFixed(1)} hrs` : "N/A";
-      const countsStr = `${src.objects_retrieved ?? 0} / ${src.objects_loaded ?? src.objects_accepted ?? 0} / ${src.objects_skipped_by_limit ?? 0} / ${src.objects_invalid ?? src.objects_rejected ?? 0}`;
+      const countsStr = `${src.objects_retrieved ?? "N/A"} / ${src.objects_loaded ?? src.objects_accepted ?? "N/A"} / ${src.objects_skipped_by_limit ?? "N/A"} / ${src.objects_invalid ?? src.objects_rejected ?? "N/A"}`;
       const latencyStr = typeof src.refresh_duration_ms === "number" ? `${src.refresh_duration_ms.toFixed(1)} ms` : "N/A";
 
       return `
@@ -553,51 +599,113 @@ async function fetchDataSourcesStatus() {
 
 // ==================== OPERATIONS & TELEMETRY SCENARIOS ==================== //
 
-async function setScenario(name) {
-  currentScenario = name;
-  document.querySelectorAll(".scenario-btn").forEach(b => b.classList.remove("active"));
-  const elem = document.getElementById(`op-sc-${name}`);
-  if (elem) elem.classList.add("active");
+let operationsBusy = false;
+let scenarioDataValid = false;
+let scenarioDataRequest = 0;
 
+function updateOperationControls() {
+  document.querySelectorAll("#workspace-operations .scenario-btn, #workspace-operations .op-btn").forEach(button => {
+    button.disabled = operationsBusy || (button.classList.contains("op-btn") && !scenarioDataValid);
+  });
+}
+
+function showOperationError(message) {
+  const status = document.getElementById("operations-request-status");
+  if (status) {
+    status.textContent = message;
+    status.hidden = !message;
+  }
+}
+
+function selectScenarioButton(name) {
+  currentScenario = name;
+  document.querySelectorAll(".scenario-btn").forEach(button => button.classList.remove("active"));
+  const button = document.getElementById(`op-sc-${name}`);
+  if (button) button.classList.add("active");
+}
+
+async function checkedJson(url, options) {
+  const response = await fetch(url, options);
+  if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+  return response.json();
+}
+
+async function setScenario(name) {
+  if (operationsBusy) return;
+  operationsBusy = true;
+  ++scenarioDataRequest;
+  updateOperationControls();
+  showOperationError("");
   try {
-    await fetch(`/api/demo/scenario/${name}`, { method: "POST" });
-    fetchScenarioData(name);
+    await checkedJson(`/api/demo/scenario/${name}`, {method: "POST"});
+    selectScenarioButton(name);
+    await fetchScenarioData();
   } catch (err) {
+    showOperationError(`Scenario change failed. Previous selection retained. ${err.message}`);
     console.error("Error setting scenario:", err);
+  } finally {
+    operationsBusy = false;
+    updateOperationControls();
   }
 }
 
 async function resetDemoState() {
+  if (operationsBusy) return;
+  operationsBusy = true;
+  ++scenarioDataRequest;
+  updateOperationControls();
+  showOperationError("");
   try {
-    await fetch("/api/demo/reset", { method: "POST" });
-    setScenario("normal");
+    await checkedJson("/api/demo/reset", {method: "POST"});
+    selectScenarioButton("normal");
+    await fetchScenarioData();
   } catch (err) {
+    showOperationError(`Reset failed. ${err.message}`);
     console.error("Error resetting memory state:", err);
+  } finally {
+    operationsBusy = false;
+    updateOperationControls();
   }
 }
 
-async function fetchScenarioData(name) {
-  try {
-    const [telemetryRes, alertRes, memoryRes] = await Promise.all([
-      fetch("/api/telemetry"),
-      fetch("/api/alerts/current"),
-      fetch("/api/memory")
-    ]);
+function clearScenarioData() {
+  renderTelemetryCharts({});
+  ["sc-unusual-score", "sc-affected-params", "sc-tc-context", "sc-sim-val", "sc-nearest-match", "op-memory-count"].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) element.innerText = "--";
+  });
+  const badge = document.getElementById("sc-alert-badge");
+  if (badge) { badge.innerText = "DATA UNAVAILABLE"; badge.className = "status-badge warning"; }
+  const fill = document.getElementById("sc-sim-fill");
+  if (fill) fill.style.width = "0%";
+  const explanation = document.getElementById("sc-explanation");
+  if (explanation) explanation.innerText = "Scenario data could not be refreshed.";
+  const memory = document.getElementById("op-memory-table-body");
+  if (memory) memory.innerHTML = '<tr><td colspan="3" class="muted">Memory data unavailable.</td></tr>';
+}
 
-    if (telemetryRes.ok) {
-      const telemetry = await telemetryRes.json();
-      renderTelemetryCharts(telemetry.telemetry_charts || {});
-    }
-    if (alertRes.ok) {
-      const alert = await alertRes.json();
-      renderAlertDecision(alert);
-    }
-    if (memoryRes.ok) {
-      const memory = await memoryRes.json();
-      renderMemoryBank(memory.memories || []);
-    }
+async function fetchScenarioData() {
+  const requestId = ++scenarioDataRequest;
+  try {
+    const [telemetry, alert, memory] = await Promise.all([
+      checkedJson("/api/telemetry"), checkedJson("/api/alerts/current"), checkedJson("/api/memory")
+    ]);
+    if (requestId !== scenarioDataRequest) return false;
+    renderTelemetryCharts(telemetry.telemetry_charts || {});
+    renderAlertDecision(alert);
+    renderMemoryBank(memory.memories || []);
+    scenarioDataValid = true;
+    showOperationError("");
+    return true;
   } catch (err) {
+    if (requestId !== scenarioDataRequest) return false;
+    scenarioDataValid = false;
+    clearScenarioData();
+    showOperationError(`Scenario data unavailable. ${err.message}`);
     console.error("Error fetching scenario data:", err);
+    return false;
+  } finally {
+    updateOperationControls();
   }
 }
 
@@ -756,16 +864,23 @@ function renderMemoryBank(memories) {
 }
 
 async function submitFeedback(label) {
+  if (operationsBusy || !scenarioDataValid) return;
+  operationsBusy = true;
+  ++scenarioDataRequest;
+  updateOperationControls();
+  showOperationError("");
   try {
-    const res = await fetch("/api/feedback", {
+    await checkedJson("/api/feedback", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scenario_name: currentScenario, operator_label: label })
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({scenario_name: currentScenario, operator_label: label})
     });
-    if (res.ok) {
-      fetchScenarioData(currentScenario);
-    }
+    await fetchScenarioData();
   } catch (err) {
+    showOperationError(`Feedback was not accepted. ${err.message}`);
     console.error("Error submitting feedback:", err);
+  } finally {
+    operationsBusy = false;
+    updateOperationControls();
   }
 }
