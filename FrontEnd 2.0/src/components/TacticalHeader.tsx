@@ -97,6 +97,7 @@ export function TacticalHeader({
               color: "#F6D365",
               textShadow: "0 0 8px rgba(246, 211, 101, 0.4)" 
             }}
+            suppressHydrationWarning
           >
             {utcNowStr}
           </span>

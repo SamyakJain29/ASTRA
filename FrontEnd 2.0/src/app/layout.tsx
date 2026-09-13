@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ASTRA — Tactical Space Operations Intelligence Platform",
-  description: "Tactical CRT HUD ground station interface for spacecraft health monitoring, SGP4 orbital propagation, and anomaly detection.",
+  title: "ASTRA — Space Operations Intelligence Platform",
+  description: "Spacecraft health monitoring, backend-propagated SGP4 orbital awareness, and Adaptive Event Memory operations.",
 };
 
 export default function RootLayout({
@@ -12,8 +12,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="bg-[#060c0b] text-[#e2e8f0] antialiased overflow-hidden font-mono">
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className="bg-[#020706] text-[#e2e8f0] antialiased overflow-hidden font-mono"
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>
