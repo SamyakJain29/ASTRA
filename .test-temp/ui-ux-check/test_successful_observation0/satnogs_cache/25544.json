@@ -1,0 +1,57 @@
+{
+  "norad_id": 25544,
+  "overall_status": "AVAILABLE",
+  "source_citation": "SATNOGS COMMUNITY GROUND NETWORK",
+  "observation_recency_hours": 24,
+  "satellite_metadata": {
+    "sat_id": "SAT-25544",
+    "name": "ISS",
+    "norad_cat_id": 25544,
+    "status": null,
+    "citation": "SATNOGS COMMUNITY GROUND NETWORK"
+  },
+  "transmitters": [
+    {
+      "description": "Beacon",
+      "type": null,
+      "mode": null,
+      "frequency_hz": 145800000,
+      "baud": null,
+      "status": null
+    }
+  ],
+  "observations": [
+    {
+      "observation_id": 1001,
+      "timestamp": "2026-09-13T06:47:19.459630+00:00",
+      "ground_station_id": 42,
+      "ground_station_name": null,
+      "ground_station_identity": "Node #42",
+      "status": "Good",
+      "frequency_hz": null,
+      "mode": null,
+      "has_demoddata": false
+    }
+  ],
+  "telemetry_frames": [],
+  "latest_observation": {
+    "observation_id": 1001,
+    "timestamp": "2026-09-13T06:47:19.459630+00:00",
+    "ground_station_id": 42,
+    "ground_station_name": null,
+    "ground_station_identity": "Node #42",
+    "status": "Good",
+    "frequency_hz": null,
+    "mode": null,
+    "has_demoddata": false
+  },
+  "has_transmitters": true,
+  "has_observations": true,
+  "has_recent_observations": true,
+  "has_decoder": true,
+  "has_telemetry_frames": false,
+  "source_status": "LIVE_ONLINE",
+  "is_cached": false,
+  "cache_timestamp_epoch": 1789282039.46817,
+  "cache_timestamp_iso": "2026-09-13T06:47:19.468170+00:00"
+}

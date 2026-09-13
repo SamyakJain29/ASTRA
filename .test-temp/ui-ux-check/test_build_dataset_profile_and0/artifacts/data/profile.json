@@ -1,0 +1,132 @@
+{
+  "archive": {
+    "compressed_member_size_bytes": 37,
+    "directory_count": 0,
+    "file_count": 1,
+    "file_extensions": {
+      ".csv": 1
+    },
+    "filename": "mission.zip",
+    "member_count": 1,
+    "path": "D:\\Projects\\ASTRA\\.test-temp\\ui-ux-check\\test_build_dataset_profile_and0\\mission.zip",
+    "size_bytes": 159,
+    "top_level_file_counts": {
+      "metadata.csv": 1
+    },
+    "top_level_structure": [
+      "metadata.csv"
+    ],
+    "uncompressed_size_bytes": 35
+  },
+  "extracted": {
+    "file_count": 1,
+    "file_extensions": {
+      ".csv": 1
+    },
+    "nested_archives": [],
+    "root": "D:\\Projects\\ASTRA\\.test-temp\\ui-ux-check\\test_build_dataset_profile_and0\\interim\\mission1",
+    "size_bytes": 35,
+    "top_level_structure": [
+      "metadata.csv"
+    ],
+    "unclassified_files": []
+  },
+  "labels": {
+    "field_candidates": {},
+    "observed_category_or_type_values": {},
+    "semantic_interpretation": "Literal fields and values are reported; scientific semantics remain unresolved unless supplied by authoritative documentation.",
+    "tables": []
+  },
+  "metadata_tables": [
+    {
+      "classification_reason": "delimited table outside an observed data-specific container",
+      "column_names": [
+        "identifier",
+        "description"
+      ],
+      "compressed_size_bytes": null,
+      "delimiter": ",",
+      "duplicate_column_names": [],
+      "encoding": "utf-8-sig",
+      "example_rows": [
+        {
+          "description": "synthetic",
+          "identifier": "A"
+        }
+      ],
+      "extra_field_count": 0,
+      "filename": "metadata.csv",
+      "header_detected": true,
+      "inferred_data_types": {
+        "description": "string",
+        "identifier": "string"
+      },
+      "malformed_row_count": 0,
+      "null_counts": {
+        "description": 0,
+        "identifier": 0
+      },
+      "null_counts_scope": "all rows",
+      "path": "metadata.csv",
+      "row_count": 1,
+      "row_count_is_estimate": false,
+      "rows_scanned": 1,
+      "size_bytes": 35
+    }
+  ],
+  "profile_version": 1,
+  "telecommands": {
+    "approximate_execution_record_count": null,
+    "definition_count": null,
+    "definition_fields_matching_priority_or_impact": [],
+    "definition_tables": [],
+    "execution_archive_count": 0,
+    "execution_archive_identifiers": [],
+    "execution_archives": [],
+    "execution_files": [],
+    "execution_record_count_is_estimate": false,
+    "execution_record_formats": {},
+    "object_type_symbols_observed": [],
+    "serialization_formats_observed": {},
+    "timestamp_representation": {
+      "basis": "observed execution-record values; units and operational semantics unresolved",
+      "files_with_candidates": 0,
+      "representations_observed": []
+    },
+    "value_representations_observed": []
+  },
+  "telemetry": {
+    "archive_formats": {},
+    "channel_archives": [],
+    "channel_file_count": 0,
+    "channel_identifiers": [],
+    "compressed_size_bytes": 0,
+    "data_files": [],
+    "inner_file_formats": {},
+    "missing_value_evidence_scope": "NaT in recognized datetime arrays and NaN in recognized floating-point arrays; undocumented numeric sentinels are not interpreted",
+    "missing_value_observations": {},
+    "object_type_symbols_observed": [],
+    "sample_count_summary": {
+      "approximate_maximum_per_file": null,
+      "approximate_minimum_per_file": null,
+      "approximate_total": null,
+      "basis": "recognized embedded array lengths; values are estimates",
+      "files_with_estimates": 0
+    },
+    "sample_counts": [],
+    "sampling_interval_assessments": {},
+    "sampling_rate_comparison": {
+      "assessment": "unresolved",
+      "basis": "bounded leading timestamp observations from each recognized channel file",
+      "distinct_observed_intervals": []
+    },
+    "serialization_formats_observed": {},
+    "timestamp_representations_observed": [],
+    "uncompressed_size_bytes": 0,
+    "value_representations_observed": []
+  },
+  "unresolved_questions": [
+    "Telemetry member schema, timestamp/value representation, sampling intervals, and missing-value encoding were not resolved from recognized tabular formats.",
+    "The authoritative dataset release, source, license, and checksum are not established by structural inspection alone."
+  ]
+}

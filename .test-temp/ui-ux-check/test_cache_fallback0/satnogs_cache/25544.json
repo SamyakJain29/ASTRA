@@ -1,0 +1,22 @@
+{
+  "norad_id": 25544,
+  "overall_status": "AVAILABLE",
+  "observations": [
+    {
+      "id": 99,
+      "timestamp": "2026-09-13T06:47:19.552332+00:00"
+    }
+  ],
+  "telemetry_frames": [],
+  "latest_observation": {
+    "id": 99
+  },
+  "has_transmitters": true,
+  "has_observations": true,
+  "has_recent_observations": true,
+  "has_decoder": true,
+  "has_telemetry_frames": false,
+  "source_status": "LIVE_ONLINE",
+  "cache_timestamp_epoch": 1789282039.552332,
+  "cache_timestamp_iso": "2026-09-13T06:47:19.552332+00:00"
+}

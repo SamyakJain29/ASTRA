@@ -1,0 +1,23 @@
+{
+  "evaluation_type": "RETROSPECTIVE LABEL-CONDITIONED MEMORY-STAGE EVALUATION",
+  "labelled_rare_event_windows": 2,
+  "review_required_windows": 1,
+  "subsequently_recognized_windows": 1,
+  "recognition_rate_pct": 50.0,
+  "repeated_review_reduction_pct": 50.0,
+  "similarity_threshold": 0.8,
+  "simulation_log": [
+    {
+      "event_id": "earlier",
+      "recognized": false,
+      "review_required": true,
+      "best_similarity": 0.0
+    },
+    {
+      "event_id": "later",
+      "recognized": true,
+      "review_required": false,
+      "best_similarity": 1.0
+    }
+  ]
+}
