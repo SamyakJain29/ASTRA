@@ -73,3 +73,13 @@ Thumbs.db
 # Local tooling caches
 /.uv-cache/
 /.uv-python/
+
+# Frontend and node build outputs
+node_modules/
+.next/
+*.tsbuildinfo
+.test-temp/
+.env.local
+.env.*.local
+next-env.d.ts
+
