@@ -231,8 +231,14 @@ export default function Home() {
 
   return (
     <div 
-      className="w-screen h-screen text-[#e2e8f0] flex flex-col overflow-hidden font-mono select-none bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: "url('/bg-nebula.jpg')" }}
+      className="w-screen h-screen text-[#e2e8f0] flex flex-col overflow-hidden font-mono select-none app-background"
+      style={{
+        backgroundImage: "url('/bg-nebula.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center center",
+        backgroundRepeat: "no-repeat",
+        backgroundColor: "#020706",
+      }}
     >
       {/* Top Tactical Header */}
       <TacticalHeader

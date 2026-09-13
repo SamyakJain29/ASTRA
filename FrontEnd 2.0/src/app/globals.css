@@ -32,6 +32,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.app-background {
+  background-image: url('/bg-nebula.jpg');
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-color: #020706 !important;
+}
+
 /* Technical Telemetry & Code Elements */
 .font-mono, pre, code, .telemetry-data {
   font-family: 'JetBrains Mono', monospace !important;
