@@ -360,9 +360,9 @@ The project brings together contributions across spacecraft telemetry research, 
 | **[Tanay Prasad](https://github.com/TanayP26)** | Team Leader / Core ML and backend dev |
 | **[Sharvin Tejasvi](https://github.com/szg-zone)** | Research and UI/UX designer |
 | **[Samyak Jain](https://github.com/SamyakJain29)** | Data Analysis and Data Preprocessing |
-| **Aditya Pathak** | Frontend dev |
+| **[Aditya Pathak](https://github.com/aadityaa1014-code)** | Frontend dev |
 | **Arya Gupta** | Research and Presentation |
-| **Aditi Sharma** | Presentation and Pitching |
+| **[Sarthak Garg]** | Presentation and Pitching |
 
 For contribution guidelines, please refer to the project's development and research-integrity requirements before submitting changes.
 ## References
